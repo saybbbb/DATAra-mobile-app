@@ -1,51 +1,52 @@
 import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  Dimensions,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Dimensions,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+    Image,
 } from "react-native";
+
+import Button from "../Components/Button";
 
 // Get screen dimensions for background positioning
 const { width, height } = Dimensions.get("window");
+const DATAraLogo = require("../../assets/images/DATARA/DATAraNoText.png");
 
-export default function LoginScreen() {
+export default function RegisterScreen() {
+  const router = useRouter();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#101622" />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-
-        {/* Status Bar Mockup (Optional, but keeping consistent with design if desired, though real StatusBar is better) */}
-        {/* We rely on the real StatusBar above, but add padding for consistent look */}
-
         {/* Main Content */}
         <View style={styles.contentContainer}>
-
           {/* Logo Section */}
           <View style={styles.logoSection}>
             <View style={styles.logoContainer}>
-              <MaterialIcons name="equalizer" size={48} color="#135bec" />
-              <View style={styles.logoPulse} />
+              <Image
+                source={require("../../assets/images/DATARA/DATAraNoText.png")}
+                style={styles.logoImage}
+              />
             </View>
-            <Text style={styles.appName}>DATAra</Text>
-            <Text style={styles.appTagline}>Predict your usage.</Text>
           </View>
 
-          {/* Login Form */}
+          {/* Register Form */}
           <View style={styles.formContainer}>
-
             {/* Phone Number Input */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Phone Number</Text>
@@ -69,13 +70,14 @@ export default function LoginScreen() {
             <View style={styles.inputGroup}>
               <View style={styles.passwordHeader}>
                 <Text style={styles.label}>Password</Text>
-                <TouchableOpacity>
-                  <Text style={styles.forgotPassword}>Forgot Password?</Text>
-                </TouchableOpacity>
               </View>
               <View style={styles.inputWrapper}>
                 <View style={styles.inputIconContainer}>
-                  <MaterialIcons name="lock-outline" size={20} color="#64748b" />
+                  <MaterialIcons
+                    name="lock-outline"
+                    size={20}
+                    color="#64748b"
+                  />
                 </View>
                 <TextInput
                   style={styles.input}
@@ -98,16 +100,52 @@ export default function LoginScreen() {
               </View>
             </View>
 
+            {/* Confirm Password Input */}
+            <View style={styles.inputGroup}>
+              <View style={styles.passwordHeader}>
+                <Text style={styles.label}>Confirm Password</Text>
+              </View>
+              <View style={styles.inputWrapper}>
+                <View style={styles.inputIconContainer}>
+                  <MaterialIcons
+                    name="lock-outline"
+                    size={20}
+                    color="#64748b"
+                  />
+                </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="••••••••"
+                  placeholderTextColor="#64748b"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry={!showConfirmPassword}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  style={styles.eyeIconContainer}
+                >
+                  <MaterialIcons
+                    name={showConfirmPassword ? "visibility" : "visibility-off"}
+                    size={20}
+                    color="#64748b"
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+
             {/* Actions */}
             <View style={styles.actionContainer}>
-              <TouchableOpacity style={styles.loginButton}>
-                <Text style={styles.loginButtonText}>Log In</Text>
-                <MaterialIcons name="arrow-forward" size={18} color="white" />
-              </TouchableOpacity>
+              <Button
+                title="Register"
+                onPress={() => console.log("Register pressed")}
+              >
+                <Text style={styles.loginButtonText}>Register</Text>
+              </Button>
 
               <View style={styles.dividerContainer}>
                 <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>OR CONTINUE WITH</Text>
+                <Text style={styles.dividerText}>OR SIGN UP WITH</Text>
                 <View style={styles.dividerLine} />
               </View>
 
@@ -120,21 +158,26 @@ export default function LoginScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-
           </View>
 
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              Don't have an account?{" "}
-              <Link href="/register" asChild>
-                <Text style={styles.signUpText}>Sign Up</Text>
+              Already have an account?{" "}
+              <Link href="/Auth" asChild>
+                <Text style={styles.signUpText}>Log In</Text>
               </Link>
             </Text>
           </View>
-
         </View>
       </ScrollView>
+
+      {/* Background Mesh Gradient Simulation - Moved to bottom to stay behind but zIndex control in RN is order-based usually, or explicit zIndex */}
+      <View style={styles.backgroundMesh}>
+        <View style={styles.gradientOrb1} />
+        <View style={styles.gradientOrb2} />
+        <View style={styles.gradientOrb3} />
+      </View>
     </SafeAreaView>
   );
 }
@@ -147,6 +190,7 @@ const styles = StyleSheet.create({
   backgroundMesh: {
     ...StyleSheet.absoluteFillObject,
     overflow: "hidden",
+    zIndex: -1,
   },
   gradientOrb1: {
     position: "absolute",
@@ -179,30 +223,32 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    justifyContent: 'center',
+    justifyContent: "center",
+    zIndex: 1,
   },
   contentContainer: {
     paddingVertical: 32,
   },
+    logoImage: {
+    width: 167, 
+    height: 160,
+    borderRadius: 50,
+    shadowColor: "#1e3a8a", // blue-900
+    shadowOffset: { width: 5, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 25,
+    elevation: 10,
+    
+},
   logoSection: {
     alignItems: "center",
     marginBottom: 40,
   },
   logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    backgroundColor: "rgba(19, 91, 236, 0.2)",
-    borderWidth: 1,
-    borderColor: "rgba(19, 91, 236, 0.3)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
-    shadowColor: "#135bec",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 15,
-    elevation: 8, // Android shadow approximation
+    width: 167,
+    height: 160,
+    borderRadius: 50,
+  
   },
   logoPulse: {
     position: "absolute",
@@ -316,7 +362,7 @@ const styles = StyleSheet.create({
   socialGrid: {
     flexDirection: "row",
     gap: 12,
-    justifyContent: 'center', // Or distribute? HTML used grid-cols-2
+    justifyContent: "center", // Or distribute? HTML used grid-cols-2
   },
   socialButton: {
     flex: 1,
