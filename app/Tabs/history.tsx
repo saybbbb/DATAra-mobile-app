@@ -28,29 +28,29 @@ export default function HistoryScreen() {
     const togglePace = () => {
         setPaceIndex((prev) => (prev + 1) % paces.length);
     };
-    // Stats
-     let paceConfig = {
-    text: "USAGE: NORMAL PACE",
-    percent: "70%",
-    buttonColor: "#16a34a", // Green
-    chartColor: "#2563eb", // Blue
-  };
+        // Stats
+        let paceConfig = {
+        text: "USAGE: NORMAL PACE",
+        percent: "70%",
+        buttonColor: "#16a34a", // Green
+        chartColor: "#2563eb", // Blue
+    };
 
-  if (currentPace === 'warning') {
-    paceConfig = {
-      text: "USAGE: WARNING PACE",
-      percent: "80%",
-      buttonColor: "#ea580c", // Orange
-      chartColor: "#ea580c", // Orange
-    };
-  } else if (currentPace === 'extreme') {
-    paceConfig = {
-      text: "USAGE: EXTREME PACE",
-      percent: "85%",
-      buttonColor: "#dc2626", // Red
-      chartColor: "#dc2626", // Red
-    };
-  }
+    if (currentPace === 'warning') {
+        paceConfig = {
+        text: "USAGE: WARNING PACE",
+        percent: "80%",
+        buttonColor: "#ea580c", // Orange
+        chartColor: "#ea580c", // Orange
+        };
+    } else if (currentPace === 'extreme') {
+        paceConfig = {
+        text: "USAGE: EXTREME PACE",
+        percent: "85%",
+        buttonColor: "#dc2626", // Red
+        chartColor: "#dc2626", // Red
+        };
+    }
 
     // When your database is ready, replace this with fetched data
     const barData: BarEntry[] = [
@@ -61,7 +61,16 @@ export default function HistoryScreen() {
         { label: '4:00-5:00', height: 70, value: '350mb' },
         { label: '5:00-6:00', height: 50, value: '250mb' },
         { label: '6:00-7:00', height: 40, value: '200mb' },
-    ];
+    ]
+    
+    const handleSettings =()=>
+        router.push('/Tabs/settings')
+    
+    const handleHome =()=>
+        router.push('/Tabs/dashboard')
+    
+    const handleSetting =()=>
+            router.push('/Tabs/profile')
 
     return (
         <SafeAreaView style={styles.container}>
@@ -163,25 +172,25 @@ export default function HistoryScreen() {
                         iconName="home"
                         label="HOME"
                         isActive={activeTab === 'Home'}
-                        onPress={() => router.push('/Tabs/dashboard')}
+                        onPress={handleHome}
                     />
                     <BottomNavItem
                         iconName="history"
                         label="HISTORY"
                         isActive={activeTab === 'History'}
-                        onPress={() => { }}
+                        onPress={}
                     />
                     <BottomNavItem
                         iconName="settings"
                         label="SETTINGS"
                         isActive={activeTab === 'Settings'}
-                        onPress={() => router.push('/Tabs/settings' as any)}
+                        onPress={handleSettings}
                     />
                     <BottomNavItem
                         iconName="person-outline"
                         label="PROFILE"
                         isActive={activeTab === 'Profile'}
-                        onPress={() => router.push('/Tabs/profile' as any)}
+                        onPress={handleSetting}
                     />
                 </View>
             </View>

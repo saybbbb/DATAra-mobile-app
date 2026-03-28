@@ -88,7 +88,6 @@ export default function LoginScreen() {
                   value={phoneNumber}
                   onChangeText={setPhoneNumber}
                   keyboardType="phone-pad"
-                  autoCapitalize="none"
                 />
               </View>
             </View>
@@ -160,7 +159,7 @@ export default function LoginScreen() {
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              Don't have an account?{" "}
+              Don't have an account? {" "}
               <Link href="../register" asChild>
                 <Text style={styles.signUpText}>Sign Up</Text>
               </Link>

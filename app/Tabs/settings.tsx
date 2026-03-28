@@ -16,8 +16,14 @@ import { BottomNavItem } from '../../components/BottomNavItem';
 export default function SettingsScreen() {
     const [pushEnabled, setPushEnabled] = useState(true);
 
+    const handleHistory =()=>
+        router.push('/Tabs/history')
+    
+    const handleHome =()=>
+        router.push('/Tabs/dashboard')
+    
     const handleSetting =()=>
-        router.push('/Tabs/profile')
+            router.push('/Tabs/profile')
 
     return (
         <SafeAreaView style={styles.container}>
@@ -63,13 +69,13 @@ export default function SettingsScreen() {
             <View style={styles.bottomNavContainer}>
                 <View style={styles.bottomNavWrapper}>
                     <BottomNavItem iconName="home" label="HOME" isActive={false}
-                        onPress={() => router.push('/Tabs/dashboard')} />
+                        onPress={handleHome} />
                     <BottomNavItem iconName="history" label="HISTORY" isActive={false}
-                        onPress={() => router.push('/Tabs/history')} />
+                        onPress={handleHistory} />
                     <BottomNavItem iconName="settings" label="SETTINGS" isActive={true}
-                        onPress={() => { }} />
+                        onPress={} />
                     <BottomNavItem iconName="person-outline" label="PROFILE" isActive={false}
-                        onPress={() => router.push('/Tabs/profile')} />
+                        onPress={handleSetting} />
                 </View>
             </View>
         </SafeAreaView>

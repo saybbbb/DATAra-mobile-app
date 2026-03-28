@@ -50,6 +50,15 @@ export default function DashboardScreen() {
       chartColor: "#dc2626", // Red
     };
   }
+  
+  const handleHistory =()=>
+    router.push('/Tabs/history')
+  
+  const handleSettings =()=>
+    router.push('/Tabs/settings')
+  
+    const handleSetting =()=>
+        router.push('/Tabs/profile')
 
   return (
     <SafeAreaView style={styles.container}>
@@ -180,25 +189,25 @@ export default function DashboardScreen() {
             iconName="home"
             label="HOME"
             isActive={activeTab === 'Home'}
-            onPress={() => setActiveTab('Home')}
+            onPress={setActiveTab('Home')}
           />
           <BottomNavItem
             iconName="history"
             label="HISTORY"
             isActive={activeTab === 'History'}
-            onPress={() => router.push('/Tabs/history')}
+            onPress={handleHistory}
           />
           <BottomNavItem
             iconName="settings"
             label="SETTINGS"
             isActive={activeTab === 'Settings'}
-            onPress={() => router.push('/Tabs/settings')}
+            onPress={handleSettings}
           />
           <BottomNavItem
             iconName="person-outline"
             label="PROFILE"
             isActive={activeTab === 'Profile'}
-            onPress={() => router.push('/Tabs/profile')}
+            onPress={handleSetting}
           />
         </View>
       </View>

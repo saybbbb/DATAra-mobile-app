@@ -1,6 +1,6 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, Stack } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import {
     SafeAreaView,
     ScrollView,
@@ -16,6 +16,15 @@ import { useUser } from '../../context/UserContext';
 
 export default function ProfileScreen() {
     const { phone } = useUser();
+    
+    const handleHistory =()=>
+        router.push('/Tabs/history')
+    
+    const handleSettings =()=>
+        router.push('/Tabs/settings')
+    
+    const handleHome =()=>
+        router.push('/Tabs/dashboard')
 
     return (
         <SafeAreaView style={styles.container}>
@@ -71,13 +80,13 @@ export default function ProfileScreen() {
             <View style={styles.bottomNavContainer}>
                 <View style={styles.bottomNavWrapper}>
                     <BottomNavItem iconName="home" label="HOME" isActive={false}
-                        onPress={() => router.push('/Tabs/dashboard')} />
+                        onPress={handleHome} />
                     <BottomNavItem iconName="history" label="HISTORY" isActive={false}
-                        onPress={() => router.push('/Tabs/history')} />
+                        onPress={handleHistory} />
                     <BottomNavItem iconName="settings" label="SETTINGS" isActive={false}
-                        onPress={() => router.push('/Tabs/settings')} />
+                        onPress={handleSettings} />
                     <BottomNavItem iconName="person-outline" label="PROFILE" isActive={true}
-                        onPress={() => { }} />
+                        onPress={} />
                 </View>
             </View>
         </SafeAreaView>
