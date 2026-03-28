@@ -14,19 +14,43 @@ import {
 import { BottomNavItem } from '../../components/BottomNavItem';
 import { BarEntry, DetailsCard, TimeFilter } from '../../components/DetailsCard';
 import { StatItem } from '../../components/StatItem';
+import { useUser } from '../../context/UserContext';
 
 export default function HistoryScreen() {
-    const { phone } = useLocalSearchParams();
+    const { phone } = useUser();
     const [activeTab, setActiveTab] = useState('History');
     const [timeFilter, setTimeFilter] = useState<TimeFilter>('HOURS');
+    const [paceIndex, setPaceIndex] = useState(0);
 
-    // Stats
-    const paceConfig = {
-        text: "USAGE: NORMAL PACE",
-        percent: "70%",
-        buttonColor: "#16a34a",
-        chartColor: "#2563eb",
+    const paces = ['normal', 'warning', 'extreme'];
+    const currentPace = paces[paceIndex];
+
+    const togglePace = () => {
+        setPaceIndex((prev) => (prev + 1) % paces.length);
     };
+    // Stats
+     let paceConfig = {
+    text: "USAGE: NORMAL PACE",
+    percent: "70%",
+    buttonColor: "#16a34a", // Green
+    chartColor: "#2563eb", // Blue
+  };
+
+  if (currentPace === 'warning') {
+    paceConfig = {
+      text: "USAGE: WARNING PACE",
+      percent: "80%",
+      buttonColor: "#ea580c", // Orange
+      chartColor: "#ea580c", // Orange
+    };
+  } else if (currentPace === 'extreme') {
+    paceConfig = {
+      text: "USAGE: EXTREME PACE",
+      percent: "85%",
+      buttonColor: "#dc2626", // Red
+      chartColor: "#dc2626", // Red
+    };
+  }
 
     // When your database is ready, replace this with fetched data
     const barData: BarEntry[] = [
@@ -43,14 +67,14 @@ export default function HistoryScreen() {
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor="#101622" />
             <Stack.Screen options={{ headerShown: false }} />
-
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
             {/* Header Area Background */}
             <View style={styles.headerBackground}>
                 {/* Top Navigation */}
                 <View style={styles.topNav}>
                     <View style={styles.esimBadge}>
                         <Text style={styles.esimText}>E-SIM</Text>
-                        <Text style={styles.phoneNumber}>{phone || '+6308312035'}</Text>
+                        <Text style={styles.phoneNumber}>{phone ? `+${phone}` : '+63 08312035'}</Text>
                         <MaterialIcons name="keyboard-arrow-down" size={20} color="white" />
                     </View>
                     <View style={styles.profileSection}>
@@ -72,7 +96,6 @@ export default function HistoryScreen() {
                 </View>
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 {/* Main Usage Card - same size as dashboard */}
                 <View style={styles.mainCard}>
 
@@ -116,6 +139,7 @@ export default function HistoryScreen() {
                     {/* Usage Pace Button */}
                     <TouchableOpacity
                         style={[styles.paceButton, { backgroundColor: paceConfig.buttonColor, shadowColor: paceConfig.buttonColor }]}
+                        onPress={togglePace}
                     >
                         <MaterialIcons name="calendar-today" size={20} color="white" />
                         <Text style={styles.paceButtonText}>
@@ -131,7 +155,6 @@ export default function HistoryScreen() {
                     onTimeFilterChange={setTimeFilter}
                 />
             </ScrollView>
-
 
             {/* Bottom Navigation Wrapper fixed at bottom */}
             <View style={styles.bottomNavContainer}>

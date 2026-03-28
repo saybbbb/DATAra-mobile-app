@@ -1,5 +1,5 @@
 import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
-import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import React, { useState } from 'react';
 import {
   SafeAreaView,
@@ -14,9 +14,10 @@ import {
 import { BottomNavItem } from '../../components/BottomNavItem';
 import { SmallCard } from '../../components/SmallCard';
 import { StatItem } from '../../components/StatItem';
+import { useUser } from '../../context/UserContext';
 
 export default function DashboardScreen() {
-  const { phone } = useLocalSearchParams();
+  const { phone } = useUser();
   const [activeTab, setActiveTab] = useState('Home');
   const [paceIndex, setPaceIndex] = useState(0);
 
@@ -54,123 +55,122 @@ export default function DashboardScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#101622" />
       <Stack.Screen options={{ headerShown: false }} />
-
-      {/* Header Area Background */}
-      <View style={styles.headerBackground}>
-        {/* Top Navigation */}
-        <View style={styles.topNav}>
-          <View style={styles.esimBadge}>
-            <Text style={styles.esimText}>E-SIM</Text>
-            <Text style={styles.phoneNumber}>{phone || '+6308312035'}</Text>
-            <MaterialIcons name="keyboard-arrow-down" size={20} color="white" />
-          </View>
-          <View style={styles.profileSection}>
-            <MaterialIcons name="notifications-none" size={28} color="white" style={{ marginRight: 12 }} />
-            <View style={styles.avatarContainer}>
-              {/* Dummy avatar representation */}
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarText}>C</Text>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Header Area Background */}
+          <View style={styles.headerBackground}>
+            {/* Top Navigation */}
+            <View style={styles.topNav}>
+              <View style={styles.esimBadge}>
+                <Text style={styles.esimText}>E-SIM</Text>
+                <Text style={styles.phoneNumber}>{phone ? `+${phone}` : '+63 08312035'}</Text>
+                <MaterialIcons name="keyboard-arrow-down" size={20} color="white" />
+              </View>
+              <View style={styles.profileSection}>
+                <MaterialIcons name="notifications-none" size={28} color="white" style={{ marginRight: 12 }} />
+                <View style={styles.avatarContainer}>
+                  {/* Dummy avatar representation */}
+                  <View style={styles.avatarPlaceholder}>
+                    <Text style={styles.avatarText}>C</Text>
+                  </View>
+                </View>
               </View>
             </View>
-          </View>
-        </View>
 
-        {/* Greeting */}
-        <View style={styles.greetingContainer}>
-          <Text style={styles.greetingText}>
-            Hi <Text style={styles.greetingName}>Malunggay Pandesal!</Text>
-          </Text>
-          <Text style={styles.subtitleText}>This is your current Usage</Text>
-        </View>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Main Usage Card */}
-        <View style={styles.mainCard}>
-          {/* Circular Chart Placeholder */}
-          <View style={styles.chartContainer}>
-            <View style={[styles.circleOuter, { borderColor: paceConfig.chartColor }]}>
-              <View style={styles.circleInner}>
-                <Text style={styles.circleTextMain}>{paceConfig.percent}</Text>
-              </View>
+            {/* Greeting */}
+            <View style={styles.greetingContainer}>
+              <Text style={styles.greetingText}>
+                Hi <Text style={styles.greetingName}>Malunggay Pandesal!</Text>
+              </Text>
+              <Text style={styles.subtitleText}>This is your current Usage</Text>
             </View>
           </View>
 
-          {/* Stats Row */}
-          <View style={styles.statsRow}>
-            <StatItem
-              icon="keyboard-double-arrow-up"
-              iconColor="#16a34a"
-              iconBgColor="#dcfce7"
-              label="Total Used"
-              value="7 GB"
-              subValue="OUT OF 14 GB"
-            />
-            <StatItem
-              icon="schedule"
-              iconColor="#1d4ed8"
-              iconBgColor="#dbeafe"
-              label="Predicted"
-              value="8hrs"
-              subValue="LEFT"
-            />
-            <StatItem
-              icon="trending-up"
-              iconColor="#1d4ed8"
-              iconBgColor="#dbeafe"
-              label="Daily Avg"
-              value="1.5 GB"
-              subValue="PER DAY"
-            />
-          </View>
-
-          {/* Usage Pace Button - Interactive */}
-          <TouchableOpacity
-            style={[styles.paceButton, { backgroundColor: paceConfig.buttonColor, shadowColor: paceConfig.buttonColor }]}
-            onPress={togglePace}
-          >
-            <MaterialIcons name="calendar-today" size={20} color="white" />
-            <Text style={styles.paceButtonText}>
-              {paceConfig.text}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Bottom Small Cards */}
-        <View style={styles.smallCardsRow}>
-          <SmallCard title="Top Usage:">
-            <View style={styles.topUsageContent}>
-              <View style={styles.facebookIcon}>
-                <FontAwesome5 name="facebook-f" size={24} color="white" />
-              </View>
-              <View>
-                <Text style={styles.facebookText}>Facebook</Text>
-                <Text style={styles.facebookSubText}>Total Used</Text>
-                <Text style={styles.facebookSubTextInfo}>5GB</Text>
+          {/* Main Usage Card */}
+          <View style={styles.mainCard}>
+            {/* Circular Chart Placeholder */}
+            <View style={styles.chartContainer}>
+              <View style={[styles.circleOuter, { borderColor: paceConfig.chartColor }]}>
+                <View style={styles.circleInner}>
+                  <Text style={styles.circleTextMain}>{paceConfig.percent}</Text>
+                </View>
               </View>
             </View>
-          </SmallCard>
 
-          <SmallCard title="Consumption:">
-            <View style={styles.consumptionContent}>
-              {/* Simple Bar Chart UI Mockup */}
-              <View style={styles.barsContainer}>
-                <View style={[styles.bar, { height: 20 }]} />
-                <View style={[styles.bar, { height: 35 }]} />
-                <View style={[styles.bar, { height: 25 }]} />
-                <View style={[styles.bar, { height: 50 }]} />
-                <View style={[styles.bar, { height: 30 }]} />
-              </View>
-              <View style={styles.consumptionInfo}>
-                <Text style={styles.consumptionRate}>250mb</Text>
-                <Text style={styles.consumptionRateLabel}>per min</Text>
-              </View>
+            {/* Stats Row */}
+            <View style={styles.statsRow}>
+              <StatItem
+                icon="keyboard-double-arrow-up"
+                iconColor="#16a34a"
+                iconBgColor="#dcfce7"
+                label="Total Used"
+                value="7 GB"
+                subValue="OUT OF 14 GB"
+              />
+              <StatItem
+                icon="schedule"
+                iconColor="#1d4ed8"
+                iconBgColor="#dbeafe"
+                label="Predicted"
+                value="8hrs"
+                subValue="LEFT"
+              />
+              <StatItem
+                icon="trending-up"
+                iconColor="#1d4ed8"
+                iconBgColor="#dbeafe"
+                label="Daily Avg"
+                value="1.5 GB"
+                subValue="PER DAY"
+              />
             </View>
-            <TouchableOpacity style={styles.seeDetailsBtn}>
-              <Text style={styles.seeDetailsText}>SEE DETAILS</Text>
+
+            {/* Usage Pace Button - Interactive */}
+            <TouchableOpacity
+              style={[styles.paceButton, { backgroundColor: paceConfig.buttonColor, shadowColor: paceConfig.buttonColor }]}
+              onPress={togglePace}
+            >
+              <MaterialIcons name="calendar-today" size={20} color="white" />
+              <Text style={styles.paceButtonText}>
+                {paceConfig.text}
+              </Text>
             </TouchableOpacity>
-          </SmallCard>
-        </View>
+          </View>
+
+          {/* Bottom Small Cards */}
+          <View style={styles.smallCardsRow}>
+            <SmallCard title="Top Usage:">
+              <View style={styles.topUsageContent}>
+                <View style={styles.facebookIcon}>
+                  <FontAwesome5 name="facebook-f" size={24} color="white" />
+                </View>
+                <View>
+                  <Text style={styles.facebookText}>Facebook</Text>
+                  <Text style={styles.facebookSubText}>Total Used</Text>
+                  <Text style={styles.facebookSubTextInfo}>5GB</Text>
+                </View>
+              </View>
+            </SmallCard>
+
+            <SmallCard title="Consumption:">
+              <View style={styles.consumptionContent}>
+                {/* Simple Bar Chart UI Mockup */}
+                <View style={styles.barsContainer}>
+                  <View style={[styles.bar, { height: 20 }]} />
+                  <View style={[styles.bar, { height: 35 }]} />
+                  <View style={[styles.bar, { height: 25 }]} />
+                  <View style={[styles.bar, { height: 50 }]} />
+                  <View style={[styles.bar, { height: 30 }]} />
+                </View>
+                <View style={styles.consumptionInfo}>
+                  <Text style={styles.consumptionRate}>250mb</Text>
+                  <Text style={styles.consumptionRateLabel}>per min</Text>
+                </View>
+              </View>
+              <TouchableOpacity style={styles.seeDetailsBtn}>
+                <Text style={styles.seeDetailsText}>SEE DETAILS</Text>
+              </TouchableOpacity>
+            </SmallCard>
+          </View>
       </ScrollView>
 
       {/* Bottom Navigation */}

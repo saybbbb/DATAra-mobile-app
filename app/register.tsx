@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { useUser } from "../context/UserContext";
 
 // Get screen dimensions for background positioning
 const { width, height } = Dimensions.get("window");
@@ -24,6 +25,25 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const { setPhone } = useUser();
+
+  const handleRegister = () => {
+    if (!phoneNumber.trim() || !password.trim() || !confirmPassword.trim()) {
+      alert("Please fill in all fields.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      alert("Passwords do not match.");
+      return;
+    }
+
+    // Meaningful UI Update / Navigation upon form submission
+    setPhone(phoneNumber);
+    alert("Registration successful! Please log in.");
+    router.replace("/");
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -129,7 +149,7 @@ export default function RegisterScreen() {
 
             {/* Actions */}
             <View style={styles.actionContainer}>
-              <TouchableOpacity style={styles.loginButton}>
+              <TouchableOpacity style={styles.loginButton} onPress={handleRegister}>
                 <Text style={styles.loginButtonText}>Sign Up</Text>
                 <MaterialIcons name="arrow-forward" size={18} color="white" />
               </TouchableOpacity>

@@ -16,6 +16,9 @@ import { BottomNavItem } from '../../components/BottomNavItem';
 export default function SettingsScreen() {
     const [pushEnabled, setPushEnabled] = useState(true);
 
+    const handleSetting =()=>
+        router.push('/Tabs/profile')
+
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor="#0d1320" />
@@ -24,7 +27,7 @@ export default function SettingsScreen() {
             {/* Settings List */}
             <View style={styles.listContainer}>
                 {/* Manage Profile */}
-                <TouchableOpacity style={styles.row}>
+                <TouchableOpacity style={styles.row} onPress={handleSetting}>
                     <MaterialIcons name="person-outline" size={28} color="white" style={styles.rowIcon} />
                     <Text style={styles.rowText}>Manage Profile</Text>
                 </TouchableOpacity>

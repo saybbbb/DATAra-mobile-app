@@ -1,5 +1,5 @@
 import { MaterialIcons } from '@expo/vector-icons';
-import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import React from 'react';
 import {
     SafeAreaView,
@@ -12,9 +12,10 @@ import {
 } from 'react-native';
 
 import { BottomNavItem } from '../../components/BottomNavItem';
+import { useUser } from '../../context/UserContext';
 
 export default function ProfileScreen() {
-    const { phone } = useLocalSearchParams();
+    const { phone } = useUser();
 
     return (
         <SafeAreaView style={styles.container}>
@@ -38,7 +39,7 @@ export default function ProfileScreen() {
                     <View style={styles.esimBadge}>
                         <Text style={styles.esimText}>E-SIM</Text>
                     </View>
-                    <Text style={styles.phoneNumber}>{phone || '+6308312035'}</Text>
+                    <Text style={styles.phoneNumber}>{phone ? `+${phone}` : '+63 08312035'}</Text>
                     <MaterialIcons name="keyboard-arrow-down" size={20} color="white" />
                 </View>
 

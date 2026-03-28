@@ -1,6 +1,6 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { Link, router } from "expo-router";
-import React from "react";
+import React, { useState } from "react"; // Imported useState
 import {
     Image,
     SafeAreaView,
@@ -14,6 +14,19 @@ import {
 } from "react-native";
 
 export default function ForgotPasswordScreen() {
+    // Added state for form input handling
+    const [phoneNumber, setPhoneNumber] = useState("");
+
+    // Added logic for form submission and UI update
+    const handleSendCode = () => {
+        if (!phoneNumber.trim()) {
+            alert("Please enter a valid phone number.");
+            return;
+        }
+        // Navigate to OTP screen if input is valid
+        router.push("/Auth/otp");
+    };
+
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor="#101622" />
@@ -41,19 +54,23 @@ export default function ForgotPasswordScreen() {
                                 <View style={styles.inputIconContainer}>
                                     <MaterialIcons name="phone" size={20} color="#64748b" />
                                 </View>
+                                {/* Made TextInput a controlled component */}
                                 <TextInput
                                     style={styles.input}
                                     placeholder="Enter Account Phone Number"
                                     placeholderTextColor="#64748b"
                                     keyboardType="phone-pad"
                                     autoCapitalize="none"
+                                    value={phoneNumber}
+                                    onChangeText={setPhoneNumber}
                                 />
                             </View>
                         </View>
 
+                        {/* Linked handleSendCode to onPress */}
                         <TouchableOpacity
                             style={styles.actionButton}
-                            onPress={() => router.push("/Auth/otp")}
+                            onPress={handleSendCode}
                         >
                             <Text style={styles.actionButtonText}>Send Code</Text>
                             <MaterialIcons name="arrow-forward" size={18} color="white" />

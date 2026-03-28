@@ -14,6 +14,8 @@ import {
   View,
 } from "react-native";
 
+import { useUser } from "../context/UserContext";
+
 // Get screen dimensions for background positioning
 const { width, height } = Dimensions.get("window");
 
@@ -21,6 +23,33 @@ export default function LoginScreen() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  const { setPhone } = useUser();
+
+  const handleLogin = () => {
+    if (!phoneNumber.trim() || !password.trim()) {
+      alert("Please fill in all fields.");
+      return;
+    }
+    // This looks for only digits. You can adjust the length (e.g., {10,11}) 
+    const phoneRegex = /^[0-9]+$/;
+
+    if (!phoneRegex.test(phoneNumber)) {
+      alert("Phone number must contain only numbers.");
+      return;
+    }
+
+    if (phoneNumber.length != 11) {
+      alert("Please enter a valid phone number.");
+      return;
+    }
+
+    // Success!
+    setPhone(phoneNumber);
+    router.push({
+      pathname: "/Tabs/dashboard",
+    } as any);
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -105,12 +134,7 @@ export default function LoginScreen() {
             <View style={styles.actionContainer}>
               <TouchableOpacity
                 style={styles.loginButton}
-                onPress={() =>
-                  router.push({
-                    pathname: "/Tabs/dashboard",
-                    params: { phone: phoneNumber },
-                  } as any)
-                }
+                onPress={handleLogin}
               >
                 <Text style={styles.loginButtonText}>Log In</Text>
                 <MaterialIcons name="arrow-forward" size={18} color="white" />
