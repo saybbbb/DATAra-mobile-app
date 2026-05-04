@@ -65,7 +65,14 @@ export default function ProfileScreen() {
                     if (res.ok) {
                         const data = await res.json();
                         setProfile(data);
-                        setEditName(data.username || '');
+                        setEditName(data.full_name || '');
+                        setSelectedRegion(data.region_code || '');
+                        setSelectedCity(data.city_code || '');
+                        setSelectedBarangay(data.barangay_code || '');
+                        setStreetAddress(data.street_address || '');
+                        
+                        if (data.region_code) fetchCities(data.region_code);
+                        if (data.city_code) fetchBarangays(data.city_code);
                     }
                 } catch (e) {
                     console.error("Failed to load profile", e);
@@ -167,7 +174,7 @@ export default function ProfileScreen() {
             return;
         }
         updateBackendProfile(
-            { username: editName },
+            { full_name: editName },
             setLoadingName,
             () => setNameModalVisible(false)
         );
@@ -181,7 +188,13 @@ export default function ProfileScreen() {
         const fullAddress = `${streetAddress}, ${brgyName}, ${cityName}, ${regionName}`.replace(/^, | ,/g, '').trim();
         
         updateBackendProfile(
-            { address: fullAddress },
+            { 
+                address: fullAddress,
+                region_code: selectedRegion,
+                city_code: selectedCity,
+                barangay_code: selectedBarangay,
+                street_address: streetAddress
+            },
             setLoadingAddress,
             () => setAddressModalVisible(false)
         );
@@ -214,7 +227,7 @@ export default function ProfileScreen() {
                 {/* Info Boxes */}
                 <View style={styles.infoContainer}>
                     <TouchableOpacity style={styles.infoBox} onPress={() => setNameModalVisible(true)}>
-                        <Text style={styles.infoText}>{profile?.username || 'Charlie C. Omongos'}</Text>
+                        <Text style={styles.infoText}>{profile?.full_name || 'Charlie C. Omongos'}</Text>
                         <MaterialIcons name="edit" size={20} color="#64748b" style={styles.editIcon} />
                     </TouchableOpacity>
 
