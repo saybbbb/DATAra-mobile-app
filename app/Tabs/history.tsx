@@ -69,8 +69,7 @@ export default function HistoryScreen() {
     const handleHome =()=>
         router.push('/Tabs/dashboard')
     
-    const handleProfile =()=>
-            router.push('/Tabs/profile')
+
     
     const handleHistory =()=>
         router.replace('/Tabs/history')
@@ -189,12 +188,7 @@ export default function HistoryScreen() {
                         isActive={activeTab === 'Settings'}
                         onPress={handleSettings}
                     />
-                    <BottomNavItem
-                        iconName="person-outline"
-                        label="PROFILE"
-                        isActive={activeTab === 'Profile'}
-                        onPress={handleProfile}
-                    />
+
                 </View>
             </View>
         </SafeAreaView>
