@@ -12,6 +12,7 @@ import {
     View,
     ActivityIndicator,
     Modal,
+    Platform,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -443,6 +444,9 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 20,
+        width: '100%',
+        maxWidth: Platform.OS === 'web' ? 480 : '100%',
+        alignSelf: 'center',
     },
     modalContent: {
         width: '100%',

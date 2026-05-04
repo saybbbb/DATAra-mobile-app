@@ -253,6 +253,9 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 20,
+        width: '100%',
+        maxWidth: Platform.OS === 'web' ? 480 : '100%',
+        alignSelf: 'center',
     },
     modalContent: {
         width: '100%',
