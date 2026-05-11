@@ -65,7 +65,8 @@ export default function DashboardScreen() {
     router.push('/Tabs/settings')
   
     const handleSetting =()=>
-        router.push('/Tabs/profile')
+        router.push('/Tabs/settings')
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -210,12 +211,7 @@ export default function DashboardScreen() {
             isActive={activeTab === 'Settings'}
             onPress={handleSettings}
           />
-          <BottomNavItem
-            iconName="person-outline"
-            label="PROFILE"
-            isActive={activeTab === 'Profile'}
-            onPress={handleSetting}
-          />
+
         </View>
       </View>
     </SafeAreaView>

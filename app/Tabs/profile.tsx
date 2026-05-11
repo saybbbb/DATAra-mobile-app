@@ -52,7 +52,7 @@ export default function ProfileScreen() {
     const handleHistory = () => router.push('/Tabs/history');
     const handleSettings = () => router.push('/Tabs/settings');
     const handleHome = () => router.push('/Tabs/dashboard');
-    const handleProfile = () => router.replace('/Tabs/profile');
+
 
     useEffect(() => {
         const loadTokenAndProfile = async () => {
@@ -249,7 +249,7 @@ export default function ProfileScreen() {
                     <BottomNavItem iconName="home" label="HOME" isActive={activeTab === 'Home'} onPress={handleHome}/>
                     <BottomNavItem iconName="history" label="HISTORY" isActive={activeTab === 'History'} onPress={handleHistory} />
                     <BottomNavItem iconName="settings" label="SETTINGS" isActive={activeTab === 'Settings'} onPress={handleSettings} />
-                    <BottomNavItem iconName="person-outline" label="PROFILE" isActive={activeTab === 'Profile'} onPress={handleProfile} />
+
                 </View>
             </View>
 

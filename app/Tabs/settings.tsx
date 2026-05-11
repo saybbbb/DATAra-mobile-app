@@ -149,12 +149,7 @@ export default function SettingsScreen() {
                         isActive={activeTab === 'Settings'}
                         onPress={handleSetting} 
                     />
-                    <BottomNavItem 
-                        iconName="person-outline" 
-                        label="PROFILE" 
-                        isActive={activeTab === 'Profile'}
-                        onPress={handleProfile} 
-                    />
+
                 </View>
             </View>
 
@@ -189,7 +184,7 @@ const styles = StyleSheet.create({
     },
     listContainer: {
         flex: 1,
-        paddingTop: 80,
+        paddingTop: 25,
         paddingHorizontal: 32,
     },
     row: {
