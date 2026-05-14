@@ -18,6 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { BottomNavItem } from '../../components/BottomNavItem';
 import { useUser } from '../../context/UserContext';
+import { API_BASE_URL } from '../../constants/Config';
 
 export default function ProfileScreen() {
     const { phone } = useUser();
@@ -59,13 +60,13 @@ export default function ProfileScreen() {
             if (storedToken) {
                 setToken(storedToken);
                 try {
-                    const res = await fetch('http://127.0.0.1:8000/api/profile/', {
+                    const res = await fetch(`${API_BASE_URL}/api/profile/`, {
                         headers: { 'Authorization': `Token ${storedToken}` }
                     });
                     if (res.ok) {
                         const data = await res.json();
                         setProfile(data);
-                        setEditName(data.username || '');
+                        setEditName(data.full_name || '');
                     }
                 } catch (e) {
                     console.error("Failed to load profile", e);
@@ -139,7 +140,7 @@ export default function ProfileScreen() {
                 headers['Authorization'] = `Token ${token}`;
             }
 
-            const response = await fetch('http://127.0.0.1:8000/api/profile/', {
+            const response = await fetch(`${API_BASE_URL}/api/profile/`, {
                 method: 'PUT',
                 headers,
                 body: JSON.stringify(payload),
@@ -167,7 +168,7 @@ export default function ProfileScreen() {
             return;
         }
         updateBackendProfile(
-            { username: editName },
+            { full_name: editName },
             setLoadingName,
             () => setNameModalVisible(false)
         );
@@ -197,7 +198,13 @@ export default function ProfileScreen() {
                 <View style={styles.avatarSection}>
                     <View style={styles.avatarCircle}>
                         <View style={styles.avatarInner}>
-                            <MaterialIcons name="person" size={72} color="#94a3b8" />
+                            {profile?.full_name ? (
+                                <Text style={{ fontSize: 60, fontWeight: 'bold', color: '#3b82f6' }}>
+                                    {profile.full_name.charAt(0).toUpperCase()}
+                                </Text>
+                            ) : (
+                                <MaterialIcons name="person" size={72} color="#94a3b8" />
+                            )}
                         </View>
                     </View>
                 </View>
@@ -207,14 +214,14 @@ export default function ProfileScreen() {
                     <View style={styles.esimBadge}>
                         <Text style={styles.esimText}>E-SIM</Text>
                     </View>
-                    <Text style={styles.phoneNumber}>{profile?.phone_number || phone ? `+${profile?.phone_number || phone}` : '+63 08312035'}</Text>
+                    <Text style={styles.phoneNumber}>{profile?.phone_number || phone ? `${profile?.phone_number || phone}` : '63 08312035'}</Text>
                     <MaterialIcons name="keyboard-arrow-down" size={20} color="white" />
                 </View>
 
                 {/* Info Boxes */}
                 <View style={styles.infoContainer}>
                     <TouchableOpacity style={styles.infoBox} onPress={() => setNameModalVisible(true)}>
-                        <Text style={styles.infoText}>{profile?.username || 'Charlie C. Omongos'}</Text>
+                        <Text style={styles.infoText}>{profile?.full_name || 'Add Name'}</Text>
                         <MaterialIcons name="edit" size={20} color="#64748b" style={styles.editIcon} />
                     </TouchableOpacity>
 

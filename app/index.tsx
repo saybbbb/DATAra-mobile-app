@@ -116,6 +116,7 @@ export default function LoginScreen() {
                   value={phoneNumber}
                   onChangeText={setPhoneNumber}
                   keyboardType="phone-pad"
+                  maxLength={11}
                 />
               </View>
             </View>
