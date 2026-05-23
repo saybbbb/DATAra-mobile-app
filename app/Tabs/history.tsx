@@ -1,6 +1,8 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE_URL } from '../../constants/Config';
 import {
     SafeAreaView,
     ScrollView,
@@ -8,7 +10,8 @@ import {
     StyleSheet,
     Text,
     TouchableOpacity,
-    View
+    View,
+    Modal
 } from 'react-native';
 
 import { BottomNavItem } from '../../components/BottomNavItem';
@@ -17,51 +20,151 @@ import { StatItem } from '../../components/StatItem';
 import { useUser } from '../../context/UserContext';
 
 export default function HistoryScreen() {
-    const { phone } = useUser();
+    const { phone, readNotifIds, setReadNotifIds } = useUser();
     const [activeTab, setActiveTab] = useState('History');
     const [timeFilter, setTimeFilter] = useState<TimeFilter>('HOURS');
-    const [paceIndex, setPaceIndex] = useState(0);
+    const [summaryData, setSummaryData] = useState<any>(null);
+    const [barData, setBarData] = useState<BarEntry[]>([]);
+    const [allUsage, setAllUsage] = useState<any[]>([]);
+    const [isNotifVisible, setNotifVisible] = useState(false);
 
-    const paces = ['normal', 'warning', 'extreme'];
-    const currentPace = paces[paceIndex];
+    // Stats
+    let percent = 0;
+    if (summaryData && summaryData.total_limit_mb > 0) {
+        percent = Math.round((summaryData.total_used_mb / summaryData.total_limit_mb) * 100);
+    }
 
-    const togglePace = () => {
-        setPaceIndex((prev) => (prev + 1) % paces.length);
-    };
-        // Stats
-        let paceConfig = {
+    let paceConfig = {
         text: "USAGE: NORMAL PACE",
-        percent: "70%",
         buttonColor: "#16a34a", // Green
         chartColor: "#2563eb", // Blue
     };
 
-    if (currentPace === 'warning') {
+    if (percent >= 90) {
         paceConfig = {
-        text: "USAGE: WARNING PACE",
-        percent: "80%",
-        buttonColor: "#ea580c", // Orange
-        chartColor: "#ea580c", // Orange
+            text: "USAGE: EXTREME PACE",
+            buttonColor: "#dc2626", // Red
+            chartColor: "#dc2626", // Red
         };
-    } else if (currentPace === 'extreme') {
+    } else if (percent >= 75) {
         paceConfig = {
-        text: "USAGE: EXTREME PACE",
-        percent: "85%",
-        buttonColor: "#dc2626", // Red
-        chartColor: "#dc2626", // Red
+            text: "USAGE: WARNING PACE",
+            buttonColor: "#ea580c", // Orange
+            chartColor: "#ea580c", // Orange
         };
     }
 
-    // When your database is ready, replace this with fetched data
-    const barData: BarEntry[] = [
-        { label: '0:00-1:00', height: 80, value: '400mb' },
-        { label: '1:00-2:00', height: 40, value: '200mb' },
-        { label: '2:00-3:00', height: 60, value: '300mb' },
-        { label: '3:00-4:00', height: 30, value: '100mb' },
-        { label: '4:00-5:00', height: 70, value: '350mb' },
-        { label: '5:00-6:00', height: 50, value: '250mb' },
-        { label: '6:00-7:00', height: 40, value: '200mb' },
-    ]
+    const notifications: { id: number; title: string; message: string; time: string; type: string }[] = [];
+    if (percent >= 90) {
+        notifications.push({ id: 1, title: 'Extreme Usage Alert', message: `You have consumed ${percent}% of your limit. Please slow down.`, time: 'Just now', type: 'extreme' });
+    } else if (percent >= 75) {
+        notifications.push({ id: 1, title: 'Data Limit Warning', message: `You have consumed ${percent}% of your limit.`, time: 'Just now', type: 'warning' });
+    }
+    notifications.push({ id: 2, title: 'Welcome to DATAra', message: 'Keep tracking your data efficiently!', time: '1 day ago', type: 'info' });
+
+    const handleMarkAllRead = () => {
+        setReadNotifIds(notifications.map(n => n.id));
+    };
+
+    const unreadCount = notifications.filter(n => !readNotifIds.includes(n.id)).length;
+
+    useEffect(() => {
+        fetchHistoryData();
+    }, []);
+
+    useEffect(() => {
+        updateBarData(allUsage, timeFilter);
+    }, [allUsage, timeFilter]);
+
+    const updateBarData = (data: any[], filter: TimeFilter) => {
+        if (!data || data.length === 0) {
+            setBarData([{ label: 'No Data', height: 10, value: '0mb' }]);
+            return;
+        }
+
+        let formatted: BarEntry[] = [];
+
+        if (filter === 'HOURS') {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todayRecords = data.filter(d => d.date === todayStr);
+            
+            formatted = todayRecords.slice(0, 7).map((item: any) => {
+                const heightVal = Math.min((item.data_used_mb / 200) * 100, 100);
+                return {
+                    label: item.time_slot.split('-')[0], 
+                    height: heightVal > 10 ? heightVal : 10,
+                    value: `${Math.round(item.data_used_mb)}mb`
+                };
+            }).reverse();
+        } else if (filter === 'DAYS') {
+            const dailyData: Record<string, number> = {};
+            data.forEach(item => {
+                dailyData[item.date] = (dailyData[item.date] || 0) + item.data_used_mb;
+            });
+            const sortedDates = Object.keys(dailyData).sort().reverse().slice(0, 7);
+            formatted = sortedDates.map(date => {
+                const total = dailyData[date];
+                const heightVal = Math.min((total / 1000) * 100, 100); 
+                const dateObj = new Date(date);
+                const dayLabel = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+                return {
+                    label: dayLabel,
+                    height: heightVal > 10 ? heightVal : 10,
+                    value: `${Math.round(total)}mb`
+                };
+            }).reverse();
+        } else if (filter === 'WEEKS') {
+            const weeklyData: Record<string, number> = {};
+            const dates = data.map(d => new Date(d.date).getTime());
+            const latest = Math.max(...dates);
+            
+            data.forEach(item => {
+                const itemTime = new Date(item.date).getTime();
+                const diffDays = Math.floor((latest - itemTime) / (1000 * 60 * 60 * 24));
+                const weekIdx = Math.floor(diffDays / 7);
+                if (weekIdx < 4) { 
+                    weeklyData[`Wk ${4 - weekIdx}`] = (weeklyData[`Wk ${4 - weekIdx}`] || 0) + item.data_used_mb;
+                }
+            });
+            
+            formatted = Object.keys(weeklyData).sort().map(weekLabel => {
+                const total = weeklyData[weekLabel];
+                const heightVal = Math.min((total / 5000) * 100, 100); 
+                return {
+                    label: weekLabel,
+                    height: heightVal > 10 ? heightVal : 10,
+                    value: `${Math.round(total)}mb`
+                };
+            });
+        }
+
+        if (formatted.length === 0) {
+            formatted = [{ label: 'No Data', height: 10, value: '0mb' }];
+        }
+        setBarData(formatted);
+    };
+
+    const fetchHistoryData = async () => {
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            if (!token) return;
+            
+            const headers = { 'Authorization': `Token ${token}` };
+            
+            const summaryRes = await fetch(`${API_BASE_URL}/api/usage/summary/`, { headers });
+            if (summaryRes.ok) {
+                setSummaryData(await summaryRes.json());
+            }
+
+            const usageRes = await fetch(`${API_BASE_URL}/api/usage/`, { headers });
+            if (usageRes.ok) {
+                const data = await usageRes.json();
+                setAllUsage(data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch history data:", error);
+        }
+    };
     
     const handleSettings =()=>
         router.push('/Tabs/settings')
@@ -74,6 +177,24 @@ export default function HistoryScreen() {
     const handleHistory =()=>
         router.replace('/Tabs/history')
 
+    const getRingStyles = () => {
+        const unfilledColor = '#e0e7ff';
+        const filledColor = paceConfig.chartColor;
+        if (percent >= 90) {
+            return { borderColor: filledColor };
+        } else if (percent >= 75) {
+            return {
+                borderColor: filledColor,
+                borderRightColor: unfilledColor,
+            };
+        }
+        return {
+            borderColor: filledColor,
+            borderTopColor: unfilledColor,
+            borderRightColor: unfilledColor,
+        };
+    };
+
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor="#101622" />
@@ -85,14 +206,21 @@ export default function HistoryScreen() {
                 <View style={styles.topNav}>
                     <View style={styles.esimBadge}>
                         <Text style={styles.esimText}>E-SIM</Text>
-                        <Text style={styles.phoneNumber}>{phone ? `+${phone}` : '+63 08312035'}</Text>
+                        <Text style={styles.phoneNumber}>{phone ? `${phone}` : '63 08312035'}</Text>
                         <MaterialIcons name="keyboard-arrow-down" size={20} color="white" />
                     </View>
                     <View style={styles.profileSection}>
-                        <MaterialIcons name="notifications-none" size={28} color="white" style={{ marginRight: 12 }} />
+                        <TouchableOpacity onPress={() => setNotifVisible(true)} style={{ position: 'relative' }}>
+                            <MaterialIcons name="notifications-none" size={28} color="white" style={{ marginRight: 12 }} />
+                            {unreadCount > 0 && (
+                                <View style={styles.badgeContainer}>
+                                    <Text style={styles.badgeText}>{unreadCount}</Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
                         <View style={styles.avatarContainer}>
                             <View style={styles.avatarPlaceholder}>
-                                <Text style={styles.avatarText}>C</Text>
+                                <Text style={styles.avatarText}>{summaryData?.full_name ? summaryData.full_name.charAt(0).toUpperCase() : 'U'}</Text>
                             </View>
                         </View>
                     </View>
@@ -101,7 +229,7 @@ export default function HistoryScreen() {
                 {/* Greeting */}
                 <View style={styles.greetingContainer}>
                     <Text style={styles.greetingText}>
-                        Hi <Text style={styles.greetingName}>Malunggay Pandesal!</Text>
+                        Hi <Text style={styles.greetingName}>{summaryData?.full_name || 'User'}!</Text>
                     </Text>
                     <Text style={styles.subtitleText}>This is your usage history</Text>
                 </View>
@@ -112,9 +240,11 @@ export default function HistoryScreen() {
 
                     {/* Circular Chart Placeholder */}
                     <View style={styles.chartContainer}>
-                        <View style={[styles.circleOuter, { borderColor: paceConfig.chartColor }]}>
+                        <View style={[styles.circleOuter, getRingStyles()]}>
                             <View style={styles.circleInner}>
-                                <Text style={styles.circleTextMain}>{paceConfig.percent}</Text>
+                                <Text style={styles.circleTextMain}>
+                                    {percent}%
+                                </Text>
                             </View>
                         </View>
                     </View>
@@ -126,8 +256,8 @@ export default function HistoryScreen() {
                             iconColor="white"
                             iconBgColor="#16a34a"
                             label="Total Used"
-                            value="7 GB"
-                            subValue="OUT OF 14 GB"
+                            value={summaryData ? `${(summaryData.total_used_mb / 1024).toFixed(2)} GB` : "0 GB"}
+                            subValue={`OUT OF ${summaryData ? Math.round(summaryData.total_limit_mb / 1024) : 0} GB`}
                         />
                         <StatItem
                             icon="schedule"
@@ -142,21 +272,19 @@ export default function HistoryScreen() {
                             iconColor="white"
                             iconBgColor="#2563eb"
                             label="Daily Avg"
-                            value="1.5 GB"
+                            value={summaryData ? `${(summaryData.daily_average_mb / 1024).toFixed(2)} GB` : "0 GB"}
                             subValue="PER DAY"
                         />
                     </View>
 
-                    {/* Usage Pace Button */}
-                    <TouchableOpacity
+                    <View
                         style={[styles.paceButton, { backgroundColor: paceConfig.buttonColor, shadowColor: paceConfig.buttonColor }]}
-                        onPress={togglePace}
                     >
                         <MaterialIcons name="calendar-today" size={20} color="white" />
                         <Text style={styles.paceButtonText}>
                             {paceConfig.text}
                         </Text>
-                    </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Details Card — reusable component, swap barData from DB when ready */}
@@ -191,6 +319,48 @@ export default function HistoryScreen() {
 
                 </View>
             </View>
+            
+            {/* Notifications Modal */}
+            <Modal visible={isNotifVisible} transparent={true} animationType="fade">
+                <View style={styles.notifOverlay}>
+                <View style={styles.notifContent}>
+                    <View style={styles.notifHeader}>
+                    <View>
+                        <Text style={styles.notifTitle}>Notifications</Text>
+                        {unreadCount > 0 && (
+                            <TouchableOpacity onPress={handleMarkAllRead}>
+                                <Text style={{ color: '#3b82f6', fontSize: 13, marginTop: 4, fontWeight: '600' }}>Mark all as read</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                    <TouchableOpacity onPress={() => setNotifVisible(false)}>
+                        <MaterialIcons name="close" size={24} color="#94a3b8" />
+                    </TouchableOpacity>
+                    </View>
+                    <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false}>
+                    {notifications.map(n => (
+                        <View key={n.id} style={[styles.notifItem, readNotifIds.includes(n.id) && { opacity: 0.5 }]}>
+                        <MaterialIcons 
+                            name={n.type === 'extreme' ? 'error' : n.type === 'warning' ? 'warning' : 'info'} 
+                            size={28} 
+                            color={n.type === 'extreme' ? '#dc2626' : n.type === 'warning' ? '#ea580c' : '#3b82f6'} 
+                            style={{ marginRight: 14 }} 
+                        />
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.notifItemTitle}>{n.title}</Text>
+                            <Text style={styles.notifItemMsg}>{n.message}</Text>
+                        </View>
+                        <View style={{ alignItems: 'flex-end' }}>
+                            <Text style={styles.notifItemTime}>{n.time}</Text>
+                            {!readNotifIds.includes(n.id) && <View style={styles.unreadDot} />}
+                        </View>
+                        </View>
+                    ))}
+                    </ScrollView>
+                </View>
+                </View>
+            </Modal>
+
         </SafeAreaView>
     );
 }
@@ -313,9 +483,6 @@ const styles = StyleSheet.create({
         height: 180,
         borderRadius: 90,
         borderWidth: 16,
-        borderColor: '#2563eb', // Blue
-        borderTopColor: '#c7d2fe',
-        borderRightColor: '#c7d2fe',
         justifyContent: 'center',
         alignItems: 'center',
         transform: [{ rotate: '-45deg' }],
@@ -389,5 +556,83 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 20,
         elevation: 10,
+    },
+    notifOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        paddingHorizontal: 20,
+    },
+    notifContent: {
+        backgroundColor: '#1e293b',
+        borderRadius: 20,
+        padding: 20,
+        maxHeight: '80%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        elevation: 10,
+    },
+    notifHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: '#334155',
+        paddingBottom: 15,
+    },
+    notifTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: 'white',
+    },
+    notifItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 14,
+        borderBottomWidth: 1,
+        borderBottomColor: '#334155',
+    },
+    notifItemTitle: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: '600',
+        marginBottom: 4,
+    },
+    notifItemMsg: {
+        color: '#94a3b8',
+        fontSize: 13,
+    },
+    notifItemTime: {
+        color: '#64748b',
+        fontSize: 11,
+        marginTop: 4,
+    },
+    unreadDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: '#3b82f6',
+        marginTop: 6,
+    },
+    badgeContainer: {
+        position: 'absolute',
+        top: -4,
+        right: 8,
+        backgroundColor: '#ef4444',
+        borderRadius: 10,
+        minWidth: 18,
+        height: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1.5,
+        borderColor: '#101622',
+    },
+    badgeText: {
+        color: 'white',
+        fontSize: 10,
+        fontWeight: 'bold',
     },
 });

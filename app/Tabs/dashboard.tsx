@@ -1,6 +1,8 @@
 import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
 import { router, Stack } from 'expo-router';
 import React, { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE_URL } from '../../constants/Config';
 import {
   SafeAreaView,
   ScrollView,
@@ -9,6 +11,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Modal,
 } from 'react-native';
 
 import { BottomNavItem } from '../../components/BottomNavItem';
@@ -17,47 +20,107 @@ import { StatItem } from '../../components/StatItem';
 import { useUser } from '../../context/UserContext';
 
 export default function DashboardScreen() {
-  const { phone } = useUser();
+  const { phone, readNotifIds, setReadNotifIds } = useUser();
 
   useEffect(() => {
-  if (!phone) {
-    router.replace("/"); // Redirect to login if phone is missing
-  }
-}, [phone]);
+    if (!phone) {
+      router.replace("/"); // Redirect to login if phone is missing
+    }
+    fetchSummary();
+  }, [phone]);
+
+  const [summaryData, setSummaryData] = useState<any>(null);
+  const [usageList, setUsageList] = useState<any[]>([]);
+
+  const fetchSummary = async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) return;
+      
+      const headers = { 'Authorization': `Token ${token}` };
+      
+      const sumRes = await fetch(`${API_BASE_URL}/api/usage/summary/`, { headers });
+      if (sumRes.ok) {
+        setSummaryData(await sumRes.json());
+      }
+      
+      const usageRes = await fetch(`${API_BASE_URL}/api/usage/`, { headers });
+      if (usageRes.ok) {
+        setUsageList(await usageRes.json());
+      }
+    } catch (error) {
+      console.error("Failed to fetch dashboard data:", error);
+    }
+  };
 
   const [activeTab, setActiveTab] = useState('Home');
-  const [paceIndex, setPaceIndex] = useState(0);
+  const [isNotifVisible, setNotifVisible] = useState(false);
 
-  const paces = ['normal', 'warning', 'extreme'];
-  const currentPace = paces[paceIndex];
-
-  const togglePace = () => {
-    setPaceIndex((prev) => (prev + 1) % paces.length);
-  };
+  let percent = 0;
+  if (summaryData && summaryData.total_limit_mb > 0) {
+    percent = Math.round((summaryData.total_used_mb / summaryData.total_limit_mb) * 100);
+  }
 
   let paceConfig = {
     text: "USAGE: NORMAL PACE",
-    percent: "70%",
     buttonColor: "#16a34a", // Green
     chartColor: "#2563eb", // Blue
   };
 
-  if (currentPace === 'warning') {
-    paceConfig = {
-      text: "USAGE: WARNING PACE",
-      percent: "80%",
-      buttonColor: "#ea580c", // Orange
-      chartColor: "#ea580c", // Orange
-    };
-  } else if (currentPace === 'extreme') {
+  if (percent >= 90) {
     paceConfig = {
       text: "USAGE: EXTREME PACE",
-      percent: "85%",
       buttonColor: "#dc2626", // Red
       chartColor: "#dc2626", // Red
     };
+  } else if (percent >= 75) {
+    paceConfig = {
+      text: "USAGE: WARNING PACE",
+      buttonColor: "#ea580c", // Orange
+      chartColor: "#ea580c", // Orange
+    };
   }
-  
+
+  // Dynamic Top App Icon
+  const getAppIconInfo = (appName: string) => {
+    switch (appName) {
+      case 'Facebook': return { name: 'facebook-f', color: '#1877f2' };
+      case 'YouTube': return { name: 'youtube', color: '#ff0000' };
+      case 'TikTok': return { name: 'tiktok', color: '#000000' };
+      case 'Instagram': return { name: 'instagram', color: '#e1306c' };
+      case 'Chrome': return { name: 'chrome', color: '#4285f4' };
+      case 'Netflix': return { name: 'play', color: '#e50914' };
+      case 'Spotify': return { name: 'spotify', color: '#1db954' };
+      case 'Roblox': return { name: 'gamepad', color: '#000000' };
+      default: return { name: 'mobile-alt', color: '#64748b' };
+    }
+  };
+
+  const topAppIcon = getAppIconInfo(summaryData?.top_app);
+
+  // Dynamic Mini Chart heights
+  const recentUsage = usageList.slice(0, 5);
+  const getBarHeight = (index: number) => {
+    if (recentUsage[index]) {
+      // Max height 50, assume 500mb is around max
+      return Math.max(10, Math.min(50, (recentUsage[index].data_used_mb / 500) * 50));
+    }
+    return 10;
+  };
+  const notifications: { id: number; title: string; message: string; time: string; type: string }[] = [];
+  if (percent >= 90) {
+    notifications.push({ id: 1, title: 'Extreme Usage Alert', message: `You have consumed ${percent}% of your limit. Please slow down.`, time: 'Just now', type: 'extreme' });
+  } else if (percent >= 75) {
+    notifications.push({ id: 1, title: 'Data Limit Warning', message: `You have consumed ${percent}% of your limit.`, time: 'Just now', type: 'warning' });
+  }
+  notifications.push({ id: 2, title: 'Welcome to DATAra', message: 'Keep tracking your data efficiently!', time: '1 day ago', type: 'info' });
+
+  const handleMarkAllRead = () => {
+    setReadNotifIds(notifications.map(n => n.id));
+  };
+
+  const unreadCount = notifications.filter(n => !readNotifIds.includes(n.id)).length;
+
   const handleHistory =()=>
     router.push('/Tabs/history')
   
@@ -67,6 +130,29 @@ export default function DashboardScreen() {
     const handleSetting =()=>
         router.push('/Tabs/settings')
 
+
+  const getRingStyles = () => {
+    const unfilledColor = '#e0e7ff';
+    const filledColor = paceConfig.chartColor;
+    if (percent >= 90) {
+      // Extreme pace - mostly full
+      return {
+        borderColor: filledColor,
+      };
+    } else if (percent >= 75) {
+      // Warning pace - 3 quarters full
+      return {
+        borderColor: filledColor,
+        borderRightColor: unfilledColor,
+      };
+    }
+    // Normal pace - half full
+    return {
+      borderColor: filledColor,
+      borderTopColor: unfilledColor,
+      borderRightColor: unfilledColor,
+    };
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -79,15 +165,21 @@ export default function DashboardScreen() {
             <View style={styles.topNav}>
               <View style={styles.esimBadge}>
                 <Text style={styles.esimText}>E-SIM</Text>
-                <Text style={styles.phoneNumber}>{phone ? `+${phone}` : '+63 08312035'}</Text>
+                <Text style={styles.phoneNumber}>{phone ? `${phone}` : '63 08312035'}</Text>
                 <MaterialIcons name="keyboard-arrow-down" size={20} color="white" />
               </View>
               <View style={styles.profileSection}>
-                <MaterialIcons name="notifications-none" size={28} color="white" style={{ marginRight: 12 }} />
+                <TouchableOpacity onPress={() => setNotifVisible(true)} style={{ position: 'relative' }}>
+                  <MaterialIcons name="notifications-none" size={28} color="white" style={{ marginRight: 12 }} />
+                  {unreadCount > 0 && (
+                    <View style={styles.badgeContainer}>
+                      <Text style={styles.badgeText}>{unreadCount}</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
                 <View style={styles.avatarContainer}>
-                  {/* Dummy avatar representation */}
                   <View style={styles.avatarPlaceholder}>
-                    <Text style={styles.avatarText}>C</Text>
+                    <Text style={styles.avatarText}>{summaryData?.full_name ? summaryData.full_name.charAt(0).toUpperCase() : 'U'}</Text>
                   </View>
                 </View>
               </View>
@@ -96,7 +188,7 @@ export default function DashboardScreen() {
             {/* Greeting */}
             <View style={styles.greetingContainer}>
               <Text style={styles.greetingText}>
-                Hi <Text style={styles.greetingName}>Malunggay Pandesal!</Text>
+                Hi <Text style={styles.greetingName}>{summaryData?.full_name || 'User'}!</Text>
               </Text>
               <Text style={styles.subtitleText}>This is your current Usage</Text>
             </View>
@@ -106,9 +198,11 @@ export default function DashboardScreen() {
           <View style={styles.mainCard}>
             {/* Circular Chart Placeholder */}
             <View style={styles.chartContainer}>
-              <View style={[styles.circleOuter, { borderColor: paceConfig.chartColor }]}>
+              <View style={[styles.circleOuter, getRingStyles()]}>
                 <View style={styles.circleInner}>
-                  <Text style={styles.circleTextMain}>{paceConfig.percent}</Text>
+                  <Text style={styles.circleTextMain}>
+                    {percent}%
+                  </Text>
                 </View>
               </View>
             </View>
@@ -120,8 +214,8 @@ export default function DashboardScreen() {
                 iconColor="#16a34a"
                 iconBgColor="#dcfce7"
                 label="Total Used"
-                value="7 GB"
-                subValue="OUT OF 14 GB"
+                value={summaryData ? `${(summaryData.total_used_mb / 1024).toFixed(2)} GB` : "0 GB"}
+                subValue={`OUT OF ${summaryData ? Math.round(summaryData.total_limit_mb / 1024) : 0} GB`}
               />
               <StatItem
                 icon="schedule"
@@ -136,54 +230,51 @@ export default function DashboardScreen() {
                 iconColor="#1d4ed8"
                 iconBgColor="#dbeafe"
                 label="Daily Avg"
-                value="1.5 GB"
+                value={summaryData ? `${(summaryData.daily_average_mb / 1024).toFixed(2)} GB` : "0 GB"}
                 subValue="PER DAY"
               />
             </View>
 
-            {/* Usage Pace Button - Interactive */}
-            <TouchableOpacity
+            <View
               style={[styles.paceButton, { backgroundColor: paceConfig.buttonColor, shadowColor: paceConfig.buttonColor }]}
-              onPress={togglePace}
             >
               <MaterialIcons name="calendar-today" size={20} color="white" />
               <Text style={styles.paceButtonText}>
                 {paceConfig.text}
               </Text>
-            </TouchableOpacity>
+            </View>
           </View>
 
           {/* Bottom Small Cards */}
           <View style={styles.smallCardsRow}>
             <SmallCard title="Top Usage:">
               <View style={styles.topUsageContent}>
-                <View style={styles.facebookIcon}>
-                  <FontAwesome5 name="facebook-f" size={24} color="white" />
+                <View style={[styles.facebookIcon, { backgroundColor: topAppIcon.color }]}>
+                  <FontAwesome5 name={topAppIcon.name as any} size={24} color="white" />
                 </View>
                 <View>
-                  <Text style={styles.facebookText}>Facebook</Text>
+                  <Text style={styles.facebookText}>{summaryData?.top_app || "N/A"}</Text>
                   <Text style={styles.facebookSubText}>Total Used</Text>
-                  <Text style={styles.facebookSubTextInfo}>5GB</Text>
+                  <Text style={styles.facebookSubTextInfo}>{summaryData?.top_app_usage_mb ? `${(summaryData.top_app_usage_mb / 1024).toFixed(2)} GB` : "0 GB"}</Text>
                 </View>
               </View>
             </SmallCard>
 
             <SmallCard title="Consumption:">
               <View style={styles.consumptionContent}>
-                {/* Simple Bar Chart UI Mockup */}
                 <View style={styles.barsContainer}>
-                  <View style={[styles.bar, { height: 20 }]} />
-                  <View style={[styles.bar, { height: 35 }]} />
-                  <View style={[styles.bar, { height: 25 }]} />
-                  <View style={[styles.bar, { height: 50 }]} />
-                  <View style={[styles.bar, { height: 30 }]} />
+                  <View style={[styles.bar, { height: getBarHeight(0) }]} />
+                  <View style={[styles.bar, { height: getBarHeight(1) }]} />
+                  <View style={[styles.bar, { height: getBarHeight(2) }]} />
+                  <View style={[styles.bar, { height: getBarHeight(3) }]} />
+                  <View style={[styles.bar, { height: getBarHeight(4) }]} />
                 </View>
                 <View style={styles.consumptionInfo}>
-                  <Text style={styles.consumptionRate}>250mb</Text>
-                  <Text style={styles.consumptionRateLabel}>per min</Text>
+                  <Text style={styles.consumptionRate}>{summaryData ? Math.round(summaryData.daily_average_mb / 24) : 0}mb</Text>
+                  <Text style={styles.consumptionRateLabel}>per hour</Text>
                 </View>
               </View>
-              <TouchableOpacity style={styles.seeDetailsBtn}>
+              <TouchableOpacity style={styles.seeDetailsBtn} onPress={handleHistory}>
                 <Text style={styles.seeDetailsText}>SEE DETAILS</Text>
               </TouchableOpacity>
             </SmallCard>
@@ -214,6 +305,48 @@ export default function DashboardScreen() {
 
         </View>
       </View>
+
+      {/* Notifications Modal */}
+      <Modal visible={isNotifVisible} transparent={true} animationType="fade">
+        <View style={styles.notifOverlay}>
+          <View style={styles.notifContent}>
+            <View style={styles.notifHeader}>
+              <View>
+                <Text style={styles.notifTitle}>Notifications</Text>
+                {unreadCount > 0 && (
+                  <TouchableOpacity onPress={handleMarkAllRead}>
+                    <Text style={{ color: '#3b82f6', fontSize: 13, marginTop: 4, fontWeight: '600' }}>Mark all as read</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <TouchableOpacity onPress={() => setNotifVisible(false)}>
+                <MaterialIcons name="close" size={24} color="#94a3b8" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false}>
+              {notifications.map(n => (
+                <View key={n.id} style={[styles.notifItem, readNotifIds.includes(n.id) && { opacity: 0.5 }]}>
+                  <MaterialIcons 
+                    name={n.type === 'extreme' ? 'error' : n.type === 'warning' ? 'warning' : 'info'} 
+                    size={28} 
+                    color={n.type === 'extreme' ? '#dc2626' : n.type === 'warning' ? '#ea580c' : '#3b82f6'} 
+                    style={{ marginRight: 14 }} 
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.notifItemTitle}>{n.title}</Text>
+                    <Text style={styles.notifItemMsg}>{n.message}</Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={styles.notifItemTime}>{n.time}</Text>
+                    {!readNotifIds.includes(n.id) && <View style={styles.unreadDot} />}
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -329,18 +462,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Circular gauge approximation using borders
   circleOuter: {
     width: 180,
     height: 180,
     borderRadius: 90,
     borderWidth: 16,
-    borderColor: '#2563eb', // Blue
-    borderTopColor: '#c7d2fe', // Lighter shade for the "unfilled" portion
-    borderRightColor: '#c7d2fe',
     justifyContent: 'center',
     alignItems: 'center',
-    // Rotate so light blue starts from roughly the top right
     transform: [{ rotate: '-45deg' }],
   },
   circleInner: {
@@ -478,6 +606,84 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 20,
     elevation: 10,
+  },
+  notifOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  notifContent: {
+    backgroundColor: '#1e293b',
+    borderRadius: 20,
+    padding: 20,
+    maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  notifHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#334155',
+    paddingBottom: 15,
+  },
+  notifTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  notifItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#334155',
+  },
+  notifItemTitle: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  notifItemMsg: {
+    color: '#94a3b8',
+    fontSize: 13,
+  },
+  notifItemTime: {
+    color: '#64748b',
+    fontSize: 11,
+    marginTop: 4,
+  },
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#3b82f6',
+    marginTop: 6,
+  },
+  badgeContainer: {
+    position: 'absolute',
+    top: -4,
+    right: 8,
+    backgroundColor: '#ef4444',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#101622',
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
 
 });

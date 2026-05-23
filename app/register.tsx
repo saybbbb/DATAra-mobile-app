@@ -36,6 +36,11 @@ export default function RegisterScreen() {
       return;
     }
 
+    if (phoneNumber.trim().length !== 11 || !/^\d+$/.test(phoneNumber.trim())) {
+      Alert.alert("Error", "Phone number must be exactly 11 digits.");
+      return;
+    }
+
     if (password !== confirmPassword) {
       Alert.alert("Error", "Passwords do not match.");
       return;
@@ -120,6 +125,7 @@ export default function RegisterScreen() {
                   onChangeText={setPhoneNumber}
                   keyboardType="phone-pad"
                   autoCapitalize="none"
+                  maxLength={11}
                 />
               </View>
             </View>
