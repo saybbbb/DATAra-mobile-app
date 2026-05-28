@@ -11,7 +11,8 @@ import {
     Text,
     TouchableOpacity,
     View,
-    Modal
+    Modal,
+    Image,
 } from 'react-native';
 
 import { BottomNavItem } from '../../components/BottomNavItem';
