@@ -190,10 +190,11 @@ export default function ProfileScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor="#0d1320" />
+            <StatusBar barStyle="light-content" backgroundColor="#101622" />
             <Stack.Screen options={{ headerShown: false }} />
 
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            {/* Header Area Background */}
+            <View style={styles.headerBackground}>
                 {/* Avatar */}
                 <View style={styles.avatarSection}>
                     <View style={styles.avatarCircle}>
@@ -217,7 +218,9 @@ export default function ProfileScreen() {
                     <Text style={styles.phoneNumber}>{profile?.phone_number || phone ? `${profile?.phone_number || phone}` : '63 08312035'}</Text>
                     <MaterialIcons name="keyboard-arrow-down" size={20} color="white" />
                 </View>
+            </View>
 
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 {/* Info Boxes */}
                 <View style={styles.infoContainer}>
                     <TouchableOpacity style={styles.infoBox} onPress={() => setNameModalVisible(true)}>
@@ -335,26 +338,36 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#0d1320',
+        backgroundColor: '#e2e8f0',
+    },
+    headerBackground: {
+        backgroundColor: '#101622',
+        paddingTop: 50,
+        paddingHorizontal: 20,
+        paddingBottom: 30,
+        borderBottomLeftRadius: 30,
+        borderBottomRightRadius: 30,
+        alignItems: 'center',
     },
     scrollContent: {
-        paddingTop: 40,
-        paddingHorizontal: 28,
+        paddingTop: 24,
+        paddingHorizontal: 20,
         paddingBottom: 110,
-        alignItems: 'center',
     },
     avatarSection: {
         alignItems: 'center',
-        marginBottom: 24,
+        marginBottom: 16,
     },
     avatarCircle: {
         width: 130,
         height: 130,
         borderRadius: 65,
-        backgroundColor: '#dbeafe',
+        backgroundColor: 'white',
         overflow: 'hidden',
         justifyContent: 'center',
         alignItems: 'center',
+        borderWidth: 3,
+        borderColor: 'rgba(255,255,255,0.3)',
     },
     avatarInner: {
         width: '100%',
@@ -366,17 +379,17 @@ const styles = StyleSheet.create({
     esimRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 32,
+        marginBottom: 8,
     },
     esimBadge: {
-        backgroundColor: '#334155',
+        backgroundColor: 'rgba(255,255,255,0.1)',
         paddingHorizontal: 10,
         paddingVertical: 4,
         borderRadius: 8,
         marginRight: 8,
     },
     esimText: {
-        color: '#94a3b8',
+        color: '#9ca3af',
         fontSize: 12,
         fontWeight: 'bold',
     },
@@ -388,11 +401,19 @@ const styles = StyleSheet.create({
     },
     infoContainer: {
         width: '100%',
+        backgroundColor: 'white',
+        borderRadius: 24,
+        padding: 16,
         gap: 12,
         marginBottom: 40,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+        elevation: 8,
     },
     infoBox: {
-        backgroundColor: '#e2e8f0',
+        backgroundColor: '#f1f5f9',
         borderRadius: 12,
         paddingVertical: 18,
         paddingHorizontal: 20,
