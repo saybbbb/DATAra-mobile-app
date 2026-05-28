@@ -11,13 +11,13 @@ import {
   Text,
   TouchableOpacity,
   View,
-  Modal,
 } from 'react-native';
 
 import { BottomNavItem } from '../../components/BottomNavItem';
 import { SmallCard } from '../../components/SmallCard';
 import { StatItem } from '../../components/StatItem';
 import { useUser } from '../../context/UserContext';
+import NotificationPanel, { Notification } from '../../components/NotificationPanel';
 
 export default function DashboardScreen() {
   const { phone, readNotifIds, setReadNotifIds } = useUser();
@@ -107,13 +107,14 @@ export default function DashboardScreen() {
     }
     return 10;
   };
-  const notifications: { id: number; title: string; message: string; time: string; type: string }[] = [];
+  // Build local / client-generated notifications (backend-ready shape)
+  const notifications: Notification[] = [];
   if (percent >= 90) {
-    notifications.push({ id: 1, title: 'Extreme Usage Alert', message: `You have consumed ${percent}% of your limit. Please slow down.`, time: 'Just now', type: 'extreme' });
+    notifications.push({ id: 1, title: 'Extreme Usage Alert', message: `You have consumed ${percent}% of your limit. Please slow down.`, created_at: 'Just now', type: 'extreme', is_read: readNotifIds.includes(1) });
   } else if (percent >= 75) {
-    notifications.push({ id: 1, title: 'Data Limit Warning', message: `You have consumed ${percent}% of your limit.`, time: 'Just now', type: 'warning' });
+    notifications.push({ id: 1, title: 'Data Limit Warning', message: `You have consumed ${percent}% of your limit.`, created_at: 'Just now', type: 'warning', is_read: readNotifIds.includes(1) });
   }
-  notifications.push({ id: 2, title: 'Welcome to DATAra', message: 'Keep tracking your data efficiently!', time: '1 day ago', type: 'info' });
+  notifications.push({ id: 2, title: 'Welcome to DATAra', message: 'Keep tracking your data efficiently!', created_at: '1 day ago', type: 'info', is_read: readNotifIds.includes(2) });
 
   const handleMarkAllRead = () => {
     setReadNotifIds(notifications.map(n => n.id));
@@ -306,46 +307,14 @@ export default function DashboardScreen() {
         </View>
       </View>
 
-      {/* Notifications Modal */}
-      <Modal visible={isNotifVisible} transparent={true} animationType="fade">
-        <View style={styles.notifOverlay}>
-          <View style={styles.notifContent}>
-            <View style={styles.notifHeader}>
-              <View>
-                <Text style={styles.notifTitle}>Notifications</Text>
-                {unreadCount > 0 && (
-                  <TouchableOpacity onPress={handleMarkAllRead}>
-                    <Text style={{ color: '#3b82f6', fontSize: 13, marginTop: 4, fontWeight: '600' }}>Mark all as read</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-              <TouchableOpacity onPress={() => setNotifVisible(false)}>
-                <MaterialIcons name="close" size={24} color="#94a3b8" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false}>
-              {notifications.map(n => (
-                <View key={n.id} style={[styles.notifItem, readNotifIds.includes(n.id) && { opacity: 0.5 }]}>
-                  <MaterialIcons 
-                    name={n.type === 'extreme' ? 'error' : n.type === 'warning' ? 'warning' : 'info'} 
-                    size={28} 
-                    color={n.type === 'extreme' ? '#dc2626' : n.type === 'warning' ? '#ea580c' : '#3b82f6'} 
-                    style={{ marginRight: 14 }} 
-                  />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.notifItemTitle}>{n.title}</Text>
-                    <Text style={styles.notifItemMsg}>{n.message}</Text>
-                  </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={styles.notifItemTime}>{n.time}</Text>
-                    {!readNotifIds.includes(n.id) && <View style={styles.unreadDot} />}
-                  </View>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+      {/* Notifications Panel – slides in from right */}
+      <NotificationPanel
+        visible={isNotifVisible}
+        onClose={() => setNotifVisible(false)}
+        localNotifications={notifications}
+        readNotifIds={readNotifIds}
+        onMarkAllRead={setReadNotifIds}
+      />
 
     </SafeAreaView>
   );
@@ -607,66 +576,6 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 10,
   },
-  notifOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  notifContent: {
-    backgroundColor: '#1e293b',
-    borderRadius: 20,
-    padding: 20,
-    maxHeight: '80%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  notifHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#334155',
-    paddingBottom: 15,
-  },
-  notifTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  notifItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#334155',
-  },
-  notifItemTitle: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  notifItemMsg: {
-    color: '#94a3b8',
-    fontSize: 13,
-  },
-  notifItemTime: {
-    color: '#64748b',
-    fontSize: 11,
-    marginTop: 4,
-  },
-  unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#3b82f6',
-    marginTop: 6,
-  },
   badgeContainer: {
     position: 'absolute',
     top: -4,
@@ -685,5 +594,4 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
   },
-
 });
