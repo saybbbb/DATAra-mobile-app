@@ -23,12 +23,14 @@ import { useUser } from '../../context/UserContext';
 import { API_BASE_URL } from '../../constants/Config';
 import { ProfileCard } from '../../components/ProfileCard';
 import { BottomNavItem } from '../../components/BottomNavItem';
+import { useTheme } from '../../context/ThemeContext';
 
 // Default cartoon character matching the user's style
 const DEFAULT_AVATAR_URI = 'https://api.dicebear.com/7.x/adventurer/png?seed=Charlie';
 
 export default function ProfileScreen() {
     const { phone } = useUser();
+    const { isDarkMode, colors } = useTheme();
     const [activeTab, setActiveTab] = useState('Settings');
     const [isDeleteAccountModalVisible, setDeleteAccountModalVisible] = useState(false);
     const [isDeletingAccount, setIsDeletingAccount] = useState(false);
@@ -223,20 +225,20 @@ export default function ProfileScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor="#101622" />
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+            <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.background} />
             <Stack.Screen options={{ headerShown: false }} />
 
             {/* Header Section (Dark Blue Background) */}
-            <View style={styles.header}>
+            <View style={[styles.header, { backgroundColor: isDarkMode ? '#0d1320' : colors.card }]}>
                 {/* Back button (Top Left) */}
                 <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                    <MaterialIcons name="keyboard-arrow-left" size={28} color="white" />
+                    <MaterialIcons name="keyboard-arrow-left" size={28} color={isDarkMode ? 'white' : colors.text} />
                 </TouchableOpacity>
 
                 {/* Edit icon (Top Right) */}
                 <TouchableOpacity style={styles.editIcon}>
-                    <Feather name="edit" size={20} color="white" />
+                    <Feather name="edit" size={20} color={isDarkMode ? 'white' : colors.text} />
                 </TouchableOpacity>
 
                 {/* Circular Profile Avatar */}
@@ -249,12 +251,12 @@ export default function ProfileScreen() {
                 </View>
 
                 {/* Subtitle */}
-                <Text style={styles.profilePhotoText}>PROFILE PHOTO</Text>
+                <Text style={[styles.profilePhotoText, { color: isDarkMode ? 'white' : colors.text }]}>PROFILE PHOTO</Text>
             </View>
 
             {/* Content Area (Light Gray Background) */}
             <ScrollView 
-                style={styles.contentScroll} 
+                style={[styles.contentScroll, { backgroundColor: colors.background }]} 
                 contentContainerStyle={styles.contentContainer} 
                 showsVerticalScrollIndicator={false}
             >
@@ -298,8 +300,8 @@ export default function ProfileScreen() {
             {/* Name Edit Modal */}
             <Modal visible={isNameModalVisible} transparent={true} animationType="fade">
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Edit Name</Text>
+                    <View style={[styles.modalContent, { backgroundColor: colors.cardAlt }]}>
+                        <Text style={[styles.modalTitle, { color: colors.text }]}>Edit Name</Text>
                         <TextInput
                             style={styles.modalInput}
                             value={editName}
@@ -322,8 +324,8 @@ export default function ProfileScreen() {
             {/* Email Edit Modal */}
             <Modal visible={isEmailModalVisible} transparent={true} animationType="fade">
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Edit Email</Text>
+                    <View style={[styles.modalContent, { backgroundColor: colors.cardAlt }]}>
+                        <Text style={[styles.modalTitle, { color: colors.text }]}>Edit Email</Text>
                         <TextInput
                             style={styles.modalInput}
                             value={editEmail}
@@ -348,11 +350,11 @@ export default function ProfileScreen() {
             {/* Address Edit Modal */}
             <Modal visible={isAddressModalVisible} transparent={true} animationType="slide">
                 <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, styles.addressModal]}>
-                        <Text style={styles.modalTitle}>Update Address</Text>
+                    <View style={[styles.modalContent, styles.addressModal, { backgroundColor: colors.cardAlt }]}>
+                        <Text style={[styles.modalTitle, { color: colors.text }]}>Update Address</Text>
                         
                         <ScrollView showsVerticalScrollIndicator={false}>
-                            <Text style={styles.label}>Region</Text>
+                            <Text style={[styles.label, { color: colors.textMuted }]}>Region</Text>
                             <View style={styles.pickerContainer}>
                                 <Picker selectedValue={selectedRegion} onValueChange={onRegionChange} style={styles.picker} dropdownIconColor="#0f172a">
                                     <Picker.Item label="Select Region" value="" color="#94a3b8" />
@@ -362,7 +364,7 @@ export default function ProfileScreen() {
                                 </Picker>
                             </View>
 
-                            <Text style={styles.label}>City/Municipality</Text>
+                            <Text style={[styles.label, { color: colors.textMuted }]}>City/Municipality</Text>
                             <View style={styles.pickerContainer}>
                                 <Picker selectedValue={selectedCity} onValueChange={onCityChange} style={styles.picker} enabled={cities.length > 0} dropdownIconColor="#0f172a">
                                     <Picker.Item label="Select City/Municipality" value="" color="#94a3b8" />
@@ -372,7 +374,7 @@ export default function ProfileScreen() {
                                 </Picker>
                             </View>
 
-                            <Text style={styles.label}>Barangay</Text>
+                            <Text style={[styles.label, { color: colors.textMuted }]}>Barangay</Text>
                             <View style={styles.pickerContainer}>
                                 <Picker selectedValue={selectedBarangay} onValueChange={(val) => setSelectedBarangay(val)} style={styles.picker} enabled={barangays.length > 0} dropdownIconColor="#0f172a">
                                     <Picker.Item label="Select Barangay" value="" color="#94a3b8" />
@@ -382,7 +384,7 @@ export default function ProfileScreen() {
                                 </Picker>
                             </View>
 
-                            <Text style={styles.label}>Street Address</Text>
+                            <Text style={[styles.label, { color: colors.textMuted }]}>Street Address</Text>
                             <TextInput
                                 style={styles.modalInput}
                                 placeholder="House/Unit No., Street Name"
@@ -407,10 +409,10 @@ export default function ProfileScreen() {
             {/* Delete Account Confirmation Modal */}
             <Modal visible={isDeleteAccountModalVisible} transparent={true} animationType="fade">
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
+                    <View style={[styles.modalContent, { backgroundColor: colors.cardAlt }]}>
                         <MaterialIcons name="warning" size={48} color="#f87171" style={{ alignSelf: 'center', marginBottom: 16 }} />
-                        <Text style={styles.modalTitle}>Delete Account?</Text>
-                        <Text style={styles.deleteModalMessage}>
+                        <Text style={[styles.modalTitle, { color: colors.text }]}>Delete Account?</Text>
+                        <Text style={[styles.deleteModalMessage, { color: colors.textMuted }]}>
                             This action will permanently delete your account and all associated data. This cannot be undone.
                         </Text>
                         <View style={styles.modalActions}>
@@ -454,7 +456,7 @@ export default function ProfileScreen() {
 
             {/* Bottom Navigation */}
             <View style={styles.bottomNavContainer}>
-                <View style={styles.bottomNavWrapper}>
+                <View style={[styles.bottomNavWrapper, { backgroundColor: colors.card, borderColor: colors.navBorder }]}>
                     <BottomNavItem
                         iconName="home"
                         label="HOME"

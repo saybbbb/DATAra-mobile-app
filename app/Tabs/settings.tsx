@@ -22,10 +22,11 @@ import { BottomNavItem } from '../../components/BottomNavItem';
 import { API_BASE_URL } from '../../constants/Config';
 import { WS_URL } from '../../context/ApiConfig';
 import { useUser } from '../../context/UserContext';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function SettingsScreen() {
     const { phone } = useUser();
-    const [darkMode, setDarkMode] = useState(true);
+    const { isDarkMode, setIsDarkMode, colors } = useTheme();
     const [strictDataSaver, setStrictDataSaver] = useState(false);
     const [pushEnabled, setPushEnabled] = useState(true);
     const [activeTab, setActiveTab] = useState('Settings');
@@ -307,37 +308,37 @@ export default function SettingsScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor="#0d1117" />
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+            <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.background} />
             <Stack.Screen options={{ headerShown: false }} />
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 {/* SETTINGS Title */}
-                <Text style={styles.pageTitle}>SETTINGS</Text>
+                <Text style={[styles.pageTitle, { color: colors.text }]}>SETTINGS</Text>
 
                 {/* DISPLAY AND APPEARANCE Section */}
-                <Text style={styles.sectionHeader}>DISPLAY AND APPEARANCE</Text>
-                <View style={styles.settingsCard}>
+                <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>DISPLAY AND APPEARANCE</Text>
+                <View style={[styles.settingsCard, { backgroundColor: colors.card }]}>
                     {/* Dark Mode Toggle */}
-                    <View style={styles.row}>
+                    <View style={[styles.row, { borderBottomColor: colors.border }]}>
                         <View style={[styles.rowIconContainer, { backgroundColor: '#312e81' }]}>
                             <MaterialIcons name="dark-mode" size={22} color="#a78bfa" />
                         </View>
-                        <Text style={styles.rowText}>Dark Mode</Text>
+                        <Text style={[styles.rowText, { color: colors.text }]}>Dark Mode</Text>
                         <Switch
-                            value={darkMode}
-                            onValueChange={setDarkMode}
+                            value={isDarkMode}
+                            onValueChange={setIsDarkMode}
                             trackColor={{ false: '#334155', true: '#22c55e' }}
                             thumbColor="white"
                         />
                     </View>
 
                     {/* Push Notification */}
-                    <View style={styles.row}>
+                    <View style={[styles.row, { borderBottomColor: colors.border }]}>
                         <View style={[styles.rowIconContainer, { backgroundColor: '#1e3a5f' }]}>
                             <MaterialIcons name="notifications-none" size={22} color="#60a5fa" />
                         </View>
-                        <Text style={styles.rowText}>Push Notification</Text>
+                        <Text style={[styles.rowText, { color: colors.text }]}>Push Notification</Text>
                         <Switch
                             value={pushEnabled}
                             onValueChange={setPushEnabled}
@@ -351,7 +352,7 @@ export default function SettingsScreen() {
                         <View style={[styles.rowIconContainer, { backgroundColor: '#1a3a1a' }]}>
                             <MaterialIcons name="shield" size={22} color="#4ade80" />
                         </View>
-                        <Text style={styles.rowText}>Strict Data Saver</Text>
+                        <Text style={[styles.rowText, { color: colors.text }]}>Strict Data Saver</Text>
                         <Switch
                             value={strictDataSaver}
                             onValueChange={setStrictDataSaver}
@@ -362,41 +363,41 @@ export default function SettingsScreen() {
                 </View>
 
                 {/* DATA MANAGEMENT Section */}
-                <Text style={styles.sectionHeader}>DATA MANAGEMENT</Text>
-                <View style={styles.settingsCard}>
+                <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>DATA MANAGEMENT</Text>
+                <View style={[styles.settingsCard, { backgroundColor: colors.card }]}>
                     {/* Manage Profile */}
-                    <TouchableOpacity style={styles.row} onPress={handleProfile}>
+                    <TouchableOpacity style={[styles.row, { borderBottomColor: colors.border }]} onPress={handleProfile}>
                         <View style={[styles.rowIconContainer, { backgroundColor: '#1e293b' }]}>
                             <MaterialIcons name="person-outline" size={22} color="#94a3b8" />
                         </View>
-                        <Text style={styles.rowText}>Manage Profile</Text>
+                        <Text style={[styles.rowText, { color: colors.text }]}>Manage Profile</Text>
                         <MaterialIcons name="chevron-right" size={24} color="#64748b" />
                     </TouchableOpacity>
 
                     {/* ML Model Performance */}
-                    <TouchableOpacity style={styles.row} onPress={openMLModal}>
+                    <TouchableOpacity style={[styles.row, { borderBottomColor: colors.border }]} onPress={openMLModal}>
                         <View style={[styles.rowIconContainer, { backgroundColor: '#1e3a5f' }]}>
                             <MaterialIcons name="analytics" size={22} color="#3b82f6" />
                         </View>
-                        <Text style={styles.rowText}>ML Model Performance</Text>
+                        <Text style={[styles.rowText, { color: colors.text }]}>ML Model Performance</Text>
                         <MaterialIcons name="chevron-right" size={24} color="#64748b" />
                     </TouchableOpacity>
 
                     {/* ML/AI Prediction Report */}
-                    <TouchableOpacity style={styles.row} onPress={openPredReport}>
+                    <TouchableOpacity style={[styles.row, { borderBottomColor: colors.border }]} onPress={openPredReport}>
                         <View style={[styles.rowIconContainer, { backgroundColor: '#2e1065' }]}>
                             <MaterialIcons name="auto-graph" size={22} color="#a78bfa" />
                         </View>
-                        <Text style={styles.rowText}>AI Prediction Report</Text>
+                        <Text style={[styles.rowText, { color: colors.text }]}>AI Prediction Report</Text>
                         <MaterialIcons name="chevron-right" size={24} color="#64748b" />
                     </TouchableOpacity>
 
                     {/* Data Sync & Portability */}
-                    <TouchableOpacity style={styles.row} onPress={openSyncModal}>
+                    <TouchableOpacity style={[styles.row, { borderBottomColor: colors.border }]} onPress={openSyncModal}>
                         <View style={[styles.rowIconContainer, { backgroundColor: '#052e16' }]}>
                             <MaterialIcons name="sync" size={22} color="#22c55e" />
                         </View>
-                        <Text style={styles.rowText}>Data Sync & Portability</Text>
+                        <Text style={[styles.rowText, { color: colors.text }]}>Data Sync & Portability</Text>
                         <MaterialIcons name="chevron-right" size={24} color="#64748b" />
                     </TouchableOpacity>
 
@@ -420,7 +421,7 @@ export default function SettingsScreen() {
 
             {/* Bottom Navigation */}
             <View style={styles.bottomNavContainer}>
-                <View style={styles.bottomNavWrapper}>
+                <View style={[styles.bottomNavWrapper, { backgroundColor: colors.card, borderColor: colors.navBorder }]}>
                     <BottomNavItem 
                         iconName="home" 
                         label="HOME" 
@@ -445,10 +446,10 @@ export default function SettingsScreen() {
             {/* Delete Account Confirmation Modal */}
             <Modal visible={isDeleteModalVisible} transparent={true} animationType="fade">
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
+                    <View style={[styles.modalContent, { backgroundColor: colors.cardAlt }]}>
                         <MaterialIcons name="warning" size={48} color="#f87171" style={{ alignSelf: 'center', marginBottom: 16 }} />
-                        <Text style={styles.modalTitle}>Delete Account?</Text>
-                        <Text style={styles.modalMessage}>
+                        <Text style={[styles.modalTitle, { color: colors.text }]}>Delete Account?</Text>
+                        <Text style={[styles.modalMessage, { color: colors.textMuted }]}>
                             This action will permanently disable your account. You will no longer have access and cannot create a new account with the same phone number.
                         </Text>
                         <View style={styles.modalActions}>
@@ -466,9 +467,9 @@ export default function SettingsScreen() {
             {/* ML Diagnostics Modal */}
             <Modal visible={isMLModalVisible} transparent={true} animationType="fade">
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
+                    <View style={[styles.modalContent, { backgroundColor: colors.cardAlt }]}>
                         <MaterialIcons name="analytics" size={48} color="#3b82f6" style={{ alignSelf: 'center', marginBottom: 16 }} />
-                        <Text style={styles.modalTitle}>ML Diagnostics</Text>
+                        <Text style={[styles.modalTitle, { color: colors.text }]}>ML Diagnostics</Text>
                         
                         {isFetchingML ? (
                             <ActivityIndicator size="large" color="#3b82f6" style={{ marginVertical: 30 }} />
@@ -481,35 +482,35 @@ export default function SettingsScreen() {
                             </View>
                         ) : mlMetrics ? (
                             <View style={styles.mlMetricsContainer}>
-                                <View style={styles.mlMetricRow}>
-                                    <Text style={styles.mlMetricLabel}>Model Type</Text>
-                                    <Text style={styles.mlMetricValue}>Random Forest</Text>
+                                <View style={[styles.mlMetricRow, { borderBottomColor: colors.border }]}>
+                                    <Text style={[styles.mlMetricLabel, { color: colors.textMuted }]}>Model Type</Text>
+                                    <Text style={[styles.mlMetricValue, { color: colors.text }]}>Random Forest</Text>
                                 </View>
-                                <View style={styles.mlMetricRow}>
-                                    <Text style={styles.mlMetricLabel}>Mean Absolute Error</Text>
-                                    <Text style={styles.mlMetricValue}>
+                                <View style={[styles.mlMetricRow, { borderBottomColor: colors.border }]}>
+                                    <Text style={[styles.mlMetricLabel, { color: colors.textMuted }]}>Mean Absolute Error</Text>
+                                    <Text style={[styles.mlMetricValue, { color: colors.text }]}>
                                         {mlMetrics.mae_mb ? `${mlMetrics.mae_mb.toFixed(2)} MB` : 'N/A'}
                                     </Text>
                                 </View>
-                                <View style={styles.mlMetricRow}>
-                                    <Text style={styles.mlMetricLabel}>RMSE</Text>
-                                    <Text style={styles.mlMetricValue}>
+                                <View style={[styles.mlMetricRow, { borderBottomColor: colors.border }]}>
+                                    <Text style={[styles.mlMetricLabel, { color: colors.textMuted }]}>RMSE</Text>
+                                    <Text style={[styles.mlMetricValue, { color: colors.text }]}>
                                         {mlMetrics.rmse_mb ? `${mlMetrics.rmse_mb.toFixed(2)} MB` : 'N/A'}
                                     </Text>
                                 </View>
-                                <View style={styles.mlMetricRow}>
-                                    <Text style={styles.mlMetricLabel}>R² Score (Accuracy)</Text>
-                                    <Text style={styles.mlMetricValue}>
+                                <View style={[styles.mlMetricRow, { borderBottomColor: colors.border }]}>
+                                    <Text style={[styles.mlMetricLabel, { color: colors.textMuted }]}>R² Score (Accuracy)</Text>
+                                    <Text style={[styles.mlMetricValue, { color: colors.text }]}>
                                         {mlMetrics.r2_score ? `${(mlMetrics.r2_score * 100).toFixed(1)}%` : 'N/A'}
                                     </Text>
                                 </View>
-                                <View style={styles.mlMetricRow}>
-                                    <Text style={styles.mlMetricLabel}>Dataset Size</Text>
-                                    <Text style={styles.mlMetricValue}>
+                                <View style={[styles.mlMetricRow, { borderBottomColor: colors.border }]}>
+                                    <Text style={[styles.mlMetricLabel, { color: colors.textMuted }]}>Dataset Size</Text>
+                                    <Text style={[styles.mlMetricValue, { color: colors.text }]}>
                                         {mlMetrics.dataset_size_records ? `${mlMetrics.dataset_size_records.toLocaleString()} rows` : 'N/A'}
                                     </Text>
                                 </View>
-                                <Text style={[styles.mlMetricLabel, { marginTop: 12, marginBottom: 4 }]}>Active Features:</Text>
+                                <Text style={[styles.mlMetricLabel, { marginTop: 12, marginBottom: 4, color: colors.textMuted }]}>Active Features:</Text>
                                 <View style={styles.featuresContainer}>
                                     {mlMetrics.features_used && mlMetrics.features_used.map((feat: string, idx: number) => (
                                         <View key={idx} style={styles.featureBadge}>
@@ -533,9 +534,9 @@ export default function SettingsScreen() {
             {/* ML/AI Prediction Report Modal */}
             <Modal visible={isPredReportVisible} transparent={true} animationType="fade">
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
+                    <View style={[styles.modalContent, { backgroundColor: colors.cardAlt }]}>
                         <MaterialIcons name="auto-graph" size={48} color="#a78bfa" style={{ alignSelf: 'center', marginBottom: 16 }} />
-                        <Text style={styles.modalTitle}>AI Prediction Report</Text>
+                        <Text style={[styles.modalTitle, { color: colors.text }]}>AI Prediction Report</Text>
                         
                         {isFetchingPred ? (
                             <ActivityIndicator size="large" color="#a78bfa" style={{ marginVertical: 30 }} />
@@ -550,9 +551,9 @@ export default function SettingsScreen() {
                             <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
                                 {/* Usage Overview */}
                                 <View style={styles.reportSection}>
-                                    <Text style={styles.reportSectionTitle}>Usage Overview</Text>
+                                    <Text style={[styles.reportSectionTitle, { color: isDarkMode ? '#60a5fa' : '#2563eb' }]}>Usage Overview</Text>
                                     <View style={styles.reportProgressContainer}>
-                                        <View style={styles.reportProgressTrack}>
+                                        <View style={[styles.reportProgressTrack, { backgroundColor: isDarkMode ? '#334155' : '#e2e8f0' }]}>
                                             <View style={[styles.reportProgressFill, { 
                                                 width: `${Math.min(predReport.percentUsed, 100)}%`, 
                                                 backgroundColor: predReport.paceColor 
@@ -562,19 +563,19 @@ export default function SettingsScreen() {
                                             {predReport.percentUsed}%
                                         </Text>
                                     </View>
-                                    <View style={styles.mlMetricRow}>
-                                        <Text style={styles.mlMetricLabel}>Total Used</Text>
-                                        <Text style={styles.mlMetricValue}>
+                                    <View style={[styles.mlMetricRow, { borderBottomColor: colors.border }]}>
+                                        <Text style={[styles.mlMetricLabel, { color: colors.textMuted }]}>Total Used</Text>
+                                        <Text style={[styles.mlMetricValue, { color: colors.text }]}>
                                             {predReport.totalUsed >= 1024 ? `${(predReport.totalUsed / 1024).toFixed(1)} GB` : `${Math.round(predReport.totalUsed)} MB`}
                                         </Text>
                                     </View>
-                                    <View style={styles.mlMetricRow}>
-                                        <Text style={styles.mlMetricLabel}>Total Limit</Text>
-                                        <Text style={styles.mlMetricValue}>{(predReport.totalLimit / 1024).toFixed(1)} GB</Text>
+                                    <View style={[styles.mlMetricRow, { borderBottomColor: colors.border }]}>
+                                        <Text style={[styles.mlMetricLabel, { color: colors.textMuted }]}>Total Limit</Text>
+                                        <Text style={[styles.mlMetricValue, { color: colors.text }]}>{(predReport.totalLimit / 1024).toFixed(1)} GB</Text>
                                     </View>
-                                    <View style={styles.mlMetricRow}>
-                                        <Text style={styles.mlMetricLabel}>Daily Average</Text>
-                                        <Text style={styles.mlMetricValue}>
+                                    <View style={[styles.mlMetricRow, { borderBottomColor: colors.border }]}>
+                                        <Text style={[styles.mlMetricLabel, { color: colors.textMuted }]}>Daily Average</Text>
+                                        <Text style={[styles.mlMetricValue, { color: colors.text }]}>
                                             {predReport.dailyAvg >= 1024 ? `${(predReport.dailyAvg / 1024).toFixed(1)} GB` : `${Math.round(predReport.dailyAvg)} MB`}
                                         </Text>
                                     </View>
@@ -582,24 +583,24 @@ export default function SettingsScreen() {
 
                                 {/* Prediction */}
                                 <View style={styles.reportSection}>
-                                    <Text style={styles.reportSectionTitle}>AI Prediction</Text>
-                                    <View style={styles.mlMetricRow}>
-                                        <Text style={styles.mlMetricLabel}>Usage Pace</Text>
+                                    <Text style={[styles.reportSectionTitle, { color: isDarkMode ? '#60a5fa' : '#2563eb' }]}>AI Prediction</Text>
+                                    <View style={[styles.mlMetricRow, { borderBottomColor: colors.border }]}>
+                                        <Text style={[styles.mlMetricLabel, { color: colors.textMuted }]}>Usage Pace</Text>
                                         <Text style={[styles.mlMetricValue, { color: predReport.paceColor }]}>
                                             {predReport.usagePace}
                                         </Text>
                                     </View>
-                                    <View style={styles.mlMetricRow}>
-                                        <Text style={styles.mlMetricLabel}>Days Remaining</Text>
-                                        <Text style={styles.mlMetricValue}>{predReport.daysRemaining} days</Text>
+                                    <View style={[styles.mlMetricRow, { borderBottomColor: colors.border }]}>
+                                        <Text style={[styles.mlMetricLabel, { color: colors.textMuted }]}>Days Remaining</Text>
+                                        <Text style={[styles.mlMetricValue, { color: colors.text }]}>{predReport.daysRemaining} days</Text>
                                     </View>
-                                    <View style={styles.mlMetricRow}>
-                                        <Text style={styles.mlMetricLabel}>Top App</Text>
-                                        <Text style={styles.mlMetricValue}>{predReport.topApp}</Text>
+                                    <View style={[styles.mlMetricRow, { borderBottomColor: colors.border }]}>
+                                        <Text style={[styles.mlMetricLabel, { color: colors.textMuted }]}>Top App</Text>
+                                        <Text style={[styles.mlMetricValue, { color: colors.text }]}>{predReport.topApp}</Text>
                                     </View>
-                                    <View style={styles.mlMetricRow}>
-                                        <Text style={styles.mlMetricLabel}>Top App Usage</Text>
-                                        <Text style={styles.mlMetricValue}>
+                                    <View style={[styles.mlMetricRow, { borderBottomColor: colors.border }]}>
+                                        <Text style={[styles.mlMetricLabel, { color: colors.textMuted }]}>Top App Usage</Text>
+                                        <Text style={[styles.mlMetricValue, { color: colors.text }]}>
                                             {predReport.topAppUsage >= 1024 ? `${(predReport.topAppUsage / 1024).toFixed(2)} GB` : `${Math.round(predReport.topAppUsage)} MB`}
                                         </Text>
                                     </View>
@@ -607,25 +608,25 @@ export default function SettingsScreen() {
 
                                 {/* Model Info */}
                                 <View style={styles.reportSection}>
-                                    <Text style={styles.reportSectionTitle}>Model Performance</Text>
-                                    <View style={styles.mlMetricRow}>
-                                        <Text style={styles.mlMetricLabel}>Accuracy (R²)</Text>
-                                        <Text style={styles.mlMetricValue}>{predReport.modelAccuracy}</Text>
+                                    <Text style={[styles.reportSectionTitle, { color: isDarkMode ? '#60a5fa' : '#2563eb' }]}>Model Performance</Text>
+                                    <View style={[styles.mlMetricRow, { borderBottomColor: colors.border }]}>
+                                        <Text style={[styles.mlMetricLabel, { color: colors.textMuted }]}>Accuracy (R²)</Text>
+                                        <Text style={[styles.mlMetricValue, { color: colors.text }]}>{predReport.modelAccuracy}</Text>
                                     </View>
-                                    <View style={styles.mlMetricRow}>
-                                        <Text style={styles.mlMetricLabel}>MAE</Text>
-                                        <Text style={styles.mlMetricValue}>{predReport.mae}</Text>
+                                    <View style={[styles.mlMetricRow, { borderBottomColor: colors.border }]}>
+                                        <Text style={[styles.mlMetricLabel, { color: colors.textMuted }]}>MAE</Text>
+                                        <Text style={[styles.mlMetricValue, { color: colors.text }]}>{predReport.mae}</Text>
                                     </View>
-                                    <View style={styles.mlMetricRow}>
-                                        <Text style={styles.mlMetricLabel}>Dataset Size</Text>
-                                        <Text style={styles.mlMetricValue}>{predReport.datasetSize.toLocaleString()} rows</Text>
+                                    <View style={[styles.mlMetricRow, { borderBottomColor: colors.border }]}>
+                                        <Text style={[styles.mlMetricLabel, { color: colors.textMuted }]}>Dataset Size</Text>
+                                        <Text style={[styles.mlMetricValue, { color: colors.text }]}>{predReport.datasetSize.toLocaleString()} rows</Text>
                                     </View>
                                 </View>
 
                                 {/* Dynamic Insight */}
-                                <View style={styles.reportInsight}>
+                                <View style={[styles.reportInsight, { backgroundColor: isDarkMode ? 'rgba(251, 191, 36, 0.1)' : 'rgba(245, 158, 11, 0.15)' }]}>
                                     <MaterialIcons name="lightbulb" size={20} color="#fbbf24" />
-                                    <Text style={styles.reportInsightText}>
+                                    <Text style={[styles.reportInsightText, { color: isDarkMode ? '#fde68a' : '#b45309' }]}>
                                         {predReport.percentUsed >= 90
                                             ? `Critical: At your current rate of ${Math.round(predReport.dailyAvg)} MB/day, you will exhaust your data before the billing cycle ends. Immediately reduce streaming and background data.`
                                             : predReport.percentUsed >= 75
@@ -636,7 +637,7 @@ export default function SettingsScreen() {
                                         }
                                     </Text>
                                 </View>
-                            </ScrollView>
+                             </ScrollView>
                         ) : null}
 
                         <TouchableOpacity 
@@ -652,11 +653,11 @@ export default function SettingsScreen() {
             {/* Data Sync & Portability Modal */}
             <Modal visible={isSyncModalVisible} transparent={true} animationType="fade">
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
+                    <View style={[styles.modalContent, { backgroundColor: colors.cardAlt }]}>
                         <MaterialIcons name="sync" size={48} color="#22c55e" style={{ alignSelf: 'center', marginBottom: 16 }} />
-                        <Text style={styles.modalTitle}>Data Sync & Portability</Text>
+                        <Text style={[styles.modalTitle, { color: colors.text }]}>Data Sync & Portability</Text>
                         
-                        <Text style={styles.modalMessage}>
+                        <Text style={[styles.modalMessage, { color: colors.textMuted }]}>
                             DATAra utilizes a dual-system architecture. You can sync local records to the global database to improve overall prediction models, or download a local backup.
                         </Text>
                         
@@ -664,13 +665,13 @@ export default function SettingsScreen() {
                             <ActivityIndicator size="large" color="#22c55e" style={{ marginVertical: 20 }} />
                         ) : (
                             <View style={styles.mlMetricsContainer}>
-                                <View style={styles.mlMetricRow}>
-                                    <Text style={styles.mlMetricLabel}>Local Network Stats</Text>
-                                    <Text style={styles.mlMetricValue}>{syncStatus.network_records_count} records</Text>
+                                <View style={[styles.mlMetricRow, { borderBottomColor: colors.border }]}>
+                                    <Text style={[styles.mlMetricLabel, { color: colors.textMuted }]}>Local Network Stats</Text>
+                                    <Text style={[styles.mlMetricValue, { color: colors.text }]}>{syncStatus.network_records_count} records</Text>
                                 </View>
-                                <View style={styles.mlMetricRow}>
-                                    <Text style={styles.mlMetricLabel}>Local App Usage Stats</Text>
-                                    <Text style={styles.mlMetricValue}>{syncStatus.traffic_records_count} records</Text>
+                                <View style={[styles.mlMetricRow, { borderBottomColor: colors.border }]}>
+                                    <Text style={[styles.mlMetricLabel, { color: colors.textMuted }]}>Local App Usage Stats</Text>
+                                    <Text style={[styles.mlMetricValue, { color: colors.text }]}>{syncStatus.traffic_records_count} records</Text>
                                 </View>
                             </View>
                         )}

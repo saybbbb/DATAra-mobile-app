@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 
 interface DataInsightCardProps {
   prediction: {
@@ -15,6 +16,7 @@ interface DataInsightCardProps {
 }
 
 export function DataInsightCard({ prediction, percentUsed, dailyAvgMb }: DataInsightCardProps) {
+  const { colors, isDarkMode } = useTheme();
   // Generate dynamic insight text based on ML prediction data
   const getInsightText = (): string => {
     const pace = prediction.usage_pace || 'normal';
@@ -45,14 +47,14 @@ export function DataInsightCard({ prediction, percentUsed, dailyAvgMb }: DataIns
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.card }]}>
       <View style={styles.headerRow}>
-        <View style={styles.iconContainer}>
-          <MaterialIcons name="info-outline" size={22} color="#94a3b8" />
+        <View style={[styles.iconContainer, { backgroundColor: isDarkMode ? 'rgba(148, 163, 184, 0.15)' : 'rgba(0, 0, 0, 0.05)' }]}>
+          <MaterialIcons name="info-outline" size={22} color={colors.textMuted} />
         </View>
-        <Text style={styles.title}>Data Insight</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Data Insight</Text>
       </View>
-      <Text style={styles.insightText}>{getInsightText()}</Text>
+      <Text style={[styles.insightText, { color: colors.text }]}>{getInsightText()}</Text>
     </View>
   );
 }

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 
 interface UsageRow {
   date: string;
@@ -18,6 +19,7 @@ interface UsageTableProps {
 
 export function UsageTable({ data, onUploadCSV, onDownloadCSV }: UsageTableProps) {
   const [visibleCount, setVisibleCount] = useState(10);
+  const { colors, isDarkMode } = useTheme();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -32,39 +34,39 @@ export function UsageTable({ data, onUploadCSV, onDownloadCSV }: UsageTableProps
   const hasMore = visibleCount < data.length;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.card }]}>
       {/* Header with Upload/Download buttons */}
       <View style={styles.headerRow}>
-        <Text style={styles.headerTitle}>USAGE HISTORY</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>USAGE HISTORY</Text>
         <View style={styles.buttonsRow}>
-          <TouchableOpacity style={styles.csvButton} onPress={onUploadCSV}>
-            <MaterialIcons name="cloud-upload" size={14} color="white" />
-            <Text style={styles.csvButtonText}>Upload CSV</Text>
+          <TouchableOpacity style={[styles.csvButton, { backgroundColor: isDarkMode ? '#1e293b' : '#cbd5e1' }]} onPress={onUploadCSV}>
+            <MaterialIcons name="cloud-upload" size={14} color={isDarkMode ? 'white' : '#1e293b'} />
+            <Text style={[styles.csvButtonText, { color: isDarkMode ? 'white' : '#1e293b' }]}>Upload CSV</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.csvButton} onPress={onDownloadCSV}>
-            <MaterialIcons name="cloud-download" size={14} color="white" />
-            <Text style={styles.csvButtonText}>Download CSV</Text>
+          <TouchableOpacity style={[styles.csvButton, { backgroundColor: isDarkMode ? '#1e293b' : '#cbd5e1' }]} onPress={onDownloadCSV}>
+            <MaterialIcons name="cloud-download" size={14} color={isDarkMode ? 'white' : '#1e293b'} />
+            <Text style={[styles.csvButtonText, { color: isDarkMode ? 'white' : '#1e293b' }]}>Download CSV</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Table Headers */}
-      <View style={styles.tableHeaderRow}>
-        <Text style={[styles.tableHeaderCell, styles.dateCol]}>Date</Text>
-        <Text style={[styles.tableHeaderCell, styles.dataCol]}>Total Used</Text>
-        <Text style={[styles.tableHeaderCell, styles.avgCol]}>Daily Average</Text>
-        <Text style={[styles.tableHeaderCell, styles.durCol]}>Duration</Text>
-        <Text style={[styles.tableHeaderCell, styles.statusCol]}>Status</Text>
+      <View style={[styles.tableHeaderRow, { borderBottomColor: colors.border }]}>
+        <Text style={[styles.tableHeaderCell, styles.dateCol, { color: colors.textMuted }]}>Date</Text>
+        <Text style={[styles.tableHeaderCell, styles.dataCol, { color: colors.textMuted }]}>Total Used</Text>
+        <Text style={[styles.tableHeaderCell, styles.avgCol, { color: colors.textMuted }]}>Daily Average</Text>
+        <Text style={[styles.tableHeaderCell, styles.durCol, { color: colors.textMuted }]}>Duration</Text>
+        <Text style={[styles.tableHeaderCell, styles.statusCol, { color: colors.textMuted }]}>Status</Text>
       </View>
 
       {/* Table Body */}
       <ScrollView nestedScrollEnabled={true} style={styles.tableBody}>
         {visibleData.map((row, index) => (
-          <View key={index} style={[styles.tableRow, index % 2 === 0 && styles.tableRowAlt]}>
-            <Text style={[styles.tableCell, styles.dateCol]}>{row.date}</Text>
-            <Text style={[styles.tableCell, styles.dataCol]}>{row.totalUsed}</Text>
-            <Text style={[styles.tableCell, styles.avgCol]}>{row.dailyAvg}</Text>
-            <Text style={[styles.tableCell, styles.durCol]}>{row.duration}</Text>
+          <View key={index} style={[styles.tableRow, { borderBottomColor: colors.border }, index % 2 === 0 && { backgroundColor: colors.cardAlt }]}>
+            <Text style={[styles.tableCell, styles.dateCol, { color: colors.text }]}>{row.date}</Text>
+            <Text style={[styles.tableCell, styles.dataCol, { color: colors.text }]}>{row.totalUsed}</Text>
+            <Text style={[styles.tableCell, styles.avgCol, { color: colors.text }]}>{row.dailyAvg}</Text>
+            <Text style={[styles.tableCell, styles.durCol, { color: colors.text }]}>{row.duration}</Text>
             <Text style={[styles.statusBadge, styles.statusCol, { color: getStatusColor(row.status) }]}>
               {row.status}
             </Text>

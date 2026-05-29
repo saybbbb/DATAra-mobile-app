@@ -1,17 +1,21 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 
-export const StatItem = ({ icon, iconColor, iconBgColor, label, value, subValue }: any) => (
-  <View style={styles.statItem}>
-    <View style={[styles.statIconContainer, { backgroundColor: iconBgColor }]}>
-      <MaterialIcons name={icon} size={24} color={iconColor} />
+export const StatItem = ({ icon, iconColor, iconBgColor, label, value, subValue }: any) => {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.statItem}>
+      <View style={[styles.statIconContainer, { backgroundColor: iconBgColor }]}>
+        <MaterialIcons name={icon} size={24} color={iconColor} />
+      </View>
+      <Text style={[styles.statLabel, { color: colors.textMuted }]}>{label}</Text>
+      <Text style={[styles.statValue, { color: colors.text }]}>{value}</Text>
+      <Text style={[styles.statSubValue, { color: colors.textMuted }]}>{subValue}</Text>
     </View>
-    <Text style={styles.statLabel}>{label}</Text>
-    <Text style={styles.statValue}>{value}</Text>
-    <Text style={styles.statSubValue}>{subValue}</Text>
-  </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   statItem: {
@@ -27,18 +31,15 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 10,
-    color: '#64748b',
     fontWeight: '600',
   },
   statValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#0f172a',
     marginVertical: 2,
   },
   statSubValue: {
     fontSize: 8,
-    color: '#94a3b8',
     fontWeight: '600',
   },
 });

@@ -22,9 +22,11 @@ import { BarEntry, TimeFilter } from '../../components/DetailsCard';
 import NotificationPanel, { Notification } from '../../components/NotificationPanel';
 import { UsageTable } from '../../components/UsageTable';
 import { useUser } from '../../context/UserContext';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function HistoryScreen() {
     const { phone, readNotifIds, setReadNotifIds } = useUser();
+    const { isDarkMode, colors } = useTheme();
     const [activeTab, setActiveTab] = useState('History');
     const [timeFilter, setTimeFilter] = useState<TimeFilter>('HOURS');
     const [summaryData, setSummaryData] = useState<any>(null);
@@ -249,26 +251,26 @@ export default function HistoryScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor="#0d1117" />
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+            <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.background} />
             <Stack.Screen options={{ headerShown: false }} />
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 {/* Top Nav */}
                 <View style={styles.topNav}>
-                    <View style={styles.esimBadge}>
-                        <Text style={styles.esimText}>TM</Text>
-                        <Text style={styles.phoneNumber}>{phone ? `+${phone}` : '+6308312035'}</Text>
+                    <View style={[styles.esimBadge, { backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' }]}>
+                        <Text style={[styles.esimText, { color: isDarkMode ? '#9ca3af' : '#475569', backgroundColor: isDarkMode ? '#4b5563' : '#cbd5e1' }]}>TM</Text>
+                        <Text style={[styles.phoneNumber, { color: colors.text }]}>{phone ? `+${phone}` : '+6308312035'}</Text>
                     </View>
                     <View style={styles.profileSection}>
                         <TouchableOpacity onPress={() => setNotifVisible(true)} style={{ position: 'relative' }}>
-                            <MaterialIcons name="notifications-none" size={28} color="white" style={{ marginRight: 12 }} />
+                            <MaterialIcons name="notifications-none" size={28} color={colors.text} style={{ marginRight: 12 }} />
                             {unreadCount > 0 && (
-                                <View style={styles.badgeContainer}>
+                                <View style={[styles.badgeContainer, { borderColor: colors.background }]}>
                                     <Text style={styles.badgeText}>{unreadCount}</Text>
                                 </View>
                             )}
                         </TouchableOpacity>
-                        <View style={styles.avatarContainer}>
+                        <View style={[styles.avatarContainer, { borderColor: colors.border }]}>
                             <View style={styles.avatarPlaceholder}>
                                 <Text style={styles.avatarText}>{summaryData?.full_name ? summaryData.full_name.charAt(0).toUpperCase() : 'U'}</Text>
                             </View>
@@ -278,33 +280,33 @@ export default function HistoryScreen() {
 
                 {/* HISTORY Header */}
                 <View style={styles.historyHeader}>
-                    <Text style={styles.historyTitle}>HISTORY</Text>
+                    <Text style={[styles.historyTitle, { color: colors.text }]}>HISTORY</Text>
                     <View style={styles.historyIcons}>
                         <TouchableOpacity style={styles.historyIconBtn}>
-                            <MaterialIcons name="search" size={26} color="white" />
+                            <MaterialIcons name="search" size={26} color={colors.text} />
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.historyIconBtn} onPress={handleDownloadCSV}>
-                            <MaterialIcons name="file-download" size={26} color="white" />
+                            <MaterialIcons name="file-download" size={26} color={colors.text} />
                         </TouchableOpacity>
                     </View>
                 </View>
 
                 {/* TOTAL THIS MONTH Card with Chart */}
-                <View style={styles.totalCard}>
+                <View style={[styles.totalCard, { backgroundColor: colors.card }]}>
                     <View style={styles.totalCardHeader}>
                         <View>
-                            <Text style={styles.totalLabel}>TOTAL THIS MONTH</Text>
-                            <Text style={styles.totalValue}>{getTotalThisMonth()} <Text style={styles.totalUnit}>GB</Text></Text>
+                            <Text style={[styles.totalLabel, { color: colors.textMuted }]}>TOTAL THIS MONTH</Text>
+                            <Text style={[styles.totalValue, { color: colors.text }]}>{getTotalThisMonth()} <Text style={[styles.totalUnit, { color: colors.textMuted }]}>GB</Text></Text>
                         </View>
                         {/* Time Filter Tabs */}
-                        <View style={styles.filterTabs}>
+                        <View style={[styles.filterTabs, { backgroundColor: colors.background }]}>
                             {(['HOURS', 'DAYS', 'WEEKS'] as TimeFilter[]).map(f => (
                                 <TouchableOpacity
                                     key={f}
-                                    style={[styles.filterTab, timeFilter === f && styles.filterTabActive]}
+                                    style={[styles.filterTab, timeFilter === f && { backgroundColor: isDarkMode ? '#334155' : '#cbd5e1' }]}
                                     onPress={() => setTimeFilter(f)}
                                 >
-                                    <Text style={[styles.filterTabText, timeFilter === f && styles.filterTabTextActive]}>
+                                    <Text style={[styles.filterTabText, { color: colors.textMuted }, timeFilter === f && { color: colors.text }]}>
                                         {f === 'HOURS' ? 'Daily' : f === 'DAYS' ? 'Weekly' : 'Monthly'}
                                     </Text>
                                 </TouchableOpacity>
@@ -316,9 +318,9 @@ export default function HistoryScreen() {
                     <View style={styles.chartArea}>
                         {barData.map((entry, index) => (
                             <View key={index} style={styles.chartColumn}>
-                                <Text style={styles.chartValue}>{entry.value}</Text>
+                                <Text style={[styles.chartValue, { color: colors.textMuted }]}>{entry.value}</Text>
                                 <View style={[styles.chartBar, { height: entry.height }]} />
-                                <Text style={styles.chartLabel}>{entry.label}</Text>
+                                <Text style={[styles.chartLabel, { color: colors.textMuted }]}>{entry.label}</Text>
                             </View>
                         ))}
                     </View>
@@ -326,32 +328,32 @@ export default function HistoryScreen() {
 
                 {/* DETAIL LOGS */}
                 <View style={styles.detailLogsHeader}>
-                    <Text style={styles.detailLogsTitle}>DETAIL LOGS</Text>
-                    <TouchableOpacity style={styles.filterBtn}>
-                        <MaterialIcons name="filter-list" size={18} color="white" />
-                        <Text style={styles.filterBtnText}>Filter</Text>
+                    <Text style={[styles.detailLogsTitle, { color: colors.text }]}>DETAIL LOGS</Text>
+                    <TouchableOpacity style={[styles.filterBtn, { backgroundColor: colors.card }]}>
+                        <MaterialIcons name="filter-list" size={18} color={colors.text} />
+                        <Text style={[styles.filterBtnText, { color: colors.text }]}>Filter</Text>
                     </TouchableOpacity>
                 </View>
 
                 {/* Detail Log Cards */}
                 {allUsage.slice(0, 5).map((item, index) => (
-                    <View key={index} style={styles.logCard}>
+                    <View key={index} style={[styles.logCard, { backgroundColor: colors.card }]}>
                         <View style={styles.logCardRow}>
                             <View style={styles.logCardCol}>
-                                <Text style={styles.logCardDate}>{new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</Text>
-                                <Text style={styles.logCardTime}>{item.time_slot?.split('-')[0] || '12:00pm'}</Text>
+                                <Text style={[styles.logCardDate, { color: colors.text }]}>{new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</Text>
+                                <Text style={[styles.logCardTime, { color: colors.textMuted }]}>{item.time_slot?.split('-')[0] || '12:00pm'}</Text>
                             </View>
                             <View style={styles.logCardCol}>
-                                <Text style={styles.logCardLabel}>Data consumed</Text>
-                                <Text style={styles.logCardValue}>{item.data_used_mb >= 1024 ? `${(item.data_used_mb / 1024).toFixed(1)}gb` : `${Math.round(item.data_used_mb)}mb`}</Text>
+                                <Text style={[styles.logCardLabel, { color: colors.textMuted }]}>Data consumed</Text>
+                                <Text style={[styles.logCardValue, { color: colors.text }]}>{item.data_used_mb >= 1024 ? `${(item.data_used_mb / 1024).toFixed(1)}gb` : `${Math.round(item.data_used_mb)}mb`}</Text>
                             </View>
                             <View style={styles.logCardCol}>
-                                <Text style={styles.logCardLabel}>Session Duration</Text>
-                                <Text style={styles.logCardValue}>2h 15m</Text>
+                                <Text style={[styles.logCardLabel, { color: colors.textMuted }]}>Session Duration</Text>
+                                <Text style={[styles.logCardValue, { color: colors.text }]}>2h 15m</Text>
                             </View>
                             <View style={styles.logCardCol}>
-                                <Text style={styles.logCardLabel}>Peak Speed</Text>
-                                <Text style={styles.logCardValue}>4.2mb/s</Text>
+                                <Text style={[styles.logCardLabel, { color: colors.textMuted }]}>Peak Speed</Text>
+                                <Text style={[styles.logCardValue, { color: colors.text }]}>4.2mb/s</Text>
                             </View>
                         </View>
                     </View>
@@ -375,7 +377,7 @@ export default function HistoryScreen() {
 
             {/* Bottom Navigation */}
             <View style={styles.bottomNavContainer}>
-                <View style={styles.bottomNavWrapper}>
+                <View style={[styles.bottomNavWrapper, { backgroundColor: colors.card, borderColor: colors.navBorder }]}>
                     <BottomNavItem
                         iconName="home"
                         label="HOME"

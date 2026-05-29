@@ -6,13 +6,11 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
 // --- Types ---
-// BarEntry is the shape of each data point.
-// When your database is ready, replace the static array with fetched data
-// matching this shape: { label: string; height: number; value: string }
 export type BarEntry = {
     label: string;   // x-axis label, e.g. '0:00-1:00'
     height: number;  // bar height in pixels (scale to your max value)
@@ -36,23 +34,36 @@ export const DetailsCard = ({
     onTimeFilterChange,
     yAxisLabels = DEFAULT_Y_LABELS,
 }: Props) => {
+    const { colors, isDarkMode } = useTheme();
+    const activeColor = '#3b82f6';
+    
     return (
-        <View style={styles.card}>
-            <Text style={styles.title}>DETAILS:</Text>
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
+            <Text style={[styles.title, { color: colors.text }]}>DETAILS:</Text>
 
             {/* Time filter tabs */}
             <View style={styles.tabSelector}>
                 {(['HOURS', 'DAYS', 'WEEKS'] as TimeFilter[]).map((filter, i, arr) => (
                     <React.Fragment key={filter}>
                         <TouchableOpacity
-                            style={[styles.tabButton, timeFilter === filter && styles.tabButtonActive]}
+                            style={[
+                                styles.tabButton, 
+                                timeFilter === filter && { 
+                                    borderColor: activeColor, 
+                                    backgroundColor: isDarkMode ? 'rgba(59, 130, 246, 0.15)' : '#eef2ff' 
+                                }
+                            ]}
                             onPress={() => onTimeFilterChange(filter)}
                         >
-                            <Text style={[styles.tabText, timeFilter === filter && styles.tabTextActive]}>
+                            <Text style={[
+                                styles.tabText, 
+                                { color: colors.textMuted },
+                                timeFilter === filter && { color: activeColor }
+                            ]}>
                                 {filter}
                             </Text>
                         </TouchableOpacity>
-                        {i < arr.length - 1 && <Text style={styles.tabDivider}>|</Text>}
+                        {i < arr.length - 1 && <Text style={[styles.tabDivider, { color: colors.border }]}>|</Text>}
                     </React.Fragment>
                 ))}
             </View>
@@ -62,23 +73,23 @@ export const DetailsCard = ({
                 {/* Y Axis */}
                 <View style={styles.yAxis}>
                     {yAxisLabels.map((label) => (
-                        <Text key={label} style={styles.axisText}>{label}</Text>
+                        <Text key={label} style={[styles.axisText, { color: colors.textMuted }]}>{label}</Text>
                     ))}
                 </View>
 
                 {/* Bars */}
-                <View style={styles.chartArea}>
+                <View style={[styles.chartArea, { borderBottomColor: colors.border }]}>
                     {barData.map((item, index) => (
                         <View key={index} style={styles.barColumn}>
-                            <View style={[styles.bar, { height: item.height }]} />
-                            <Text style={styles.barLabel}>{item.label}</Text>
+                            <View style={[styles.bar, { height: item.height, backgroundColor: isDarkMode ? '#3b82f6' : '#1e1b4b' }]} />
+                            <Text style={[styles.barLabel, { color: colors.textMuted }]}>{item.label}</Text>
                         </View>
                     ))}
                 </View>
             </View>
 
             {/* Scroll indicator */}
-            <View style={styles.scrollbarTrack}>
+            <View style={[styles.scrollbarTrack, { backgroundColor: colors.border }]}>
                 <View style={styles.scrollbarThumb} />
             </View>
         </View>
@@ -87,7 +98,6 @@ export const DetailsCard = ({
 
 const styles = StyleSheet.create({
     card: {
-        backgroundColor: 'white',
         borderRadius: 24,
         padding: 20,
         marginBottom: 20,
@@ -100,7 +110,6 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 14,
         fontWeight: 'bold',
-        color: '#0f172a',
         marginBottom: 16,
     },
     tabSelector: {
@@ -111,7 +120,6 @@ const styles = StyleSheet.create({
     },
     tabText: {
         fontSize: 12,
-        color: '#94a3b8',
         fontWeight: '600',
     },
     tabButton: {
@@ -121,16 +129,8 @@ const styles = StyleSheet.create({
         borderWidth: 1.5,
         borderColor: 'transparent',
     },
-    tabButtonActive: {
-        borderColor: '#3b00ff',
-        backgroundColor: '#eef2ff',
-    },
-    tabTextActive: {
-        color: '#3b00ff',
-    },
     tabDivider: {
         marginHorizontal: 10,
-        color: '#cbd5e1',
     },
     barChartContainer: {
         flexDirection: 'row',
@@ -145,7 +145,6 @@ const styles = StyleSheet.create({
     },
     axisText: {
         fontSize: 8,
-        color: '#94a3b8',
     },
     chartArea: {
         flex: 1,
@@ -154,7 +153,6 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         height: 120,
         borderBottomWidth: 1,
-        borderBottomColor: '#f1f5f9',
     },
     barColumn: {
         alignItems: 'center',
@@ -162,18 +160,15 @@ const styles = StyleSheet.create({
     },
     bar: {
         width: '100%',
-        backgroundColor: '#1e1b4b',
         borderTopLeftRadius: 2,
         borderTopRightRadius: 2,
     },
     barLabel: {
         fontSize: 6,
-        color: '#94a3b8',
         marginTop: 4,
     },
     scrollbarTrack: {
         height: 4,
-        backgroundColor: '#e2e8f0',
         borderRadius: 2,
         marginTop: 16,
         width: '80%',
@@ -182,7 +177,7 @@ const styles = StyleSheet.create({
     scrollbarThumb: {
         width: '30%',
         height: '100%',
-        backgroundColor: '#3ea8ff',
+        backgroundColor: '#3b82f6',
         borderRadius: 2,
         marginLeft: '0%',
     },

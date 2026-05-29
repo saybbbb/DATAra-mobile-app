@@ -22,9 +22,11 @@ import { SmallCard } from '../../components/SmallCard';
 import { StatItem } from '../../components/StatItem';
 import { useUser } from '../../context/UserContext';
 import { WS_URL } from '../../context/ApiConfig';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function DashboardScreen() {
   const { phone, readNotifIds, setReadNotifIds } = useUser();
+  const { isDarkMode, colors } = useTheme();
   const wsRef = useRef<WebSocket | null>(null);
 
   // Dynamic prediction inputs
@@ -273,26 +275,26 @@ export default function DashboardScreen() {
     router.push('/Tabs/settings')
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0d1117" />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.background} />
       <Stack.Screen options={{ headerShown: false }} />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Top Navigation Bar */}
         <View style={styles.topNav}>
-          <View style={styles.esimBadge}>
-            <Text style={styles.esimText}>TM</Text>
-            <Text style={styles.phoneNumber}>{phone ? `+${phone}` : '+6308312035'}</Text>
+          <View style={[styles.esimBadge, { backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' }]}>
+            <Text style={[styles.esimText, { color: isDarkMode ? '#9ca3af' : '#475569', backgroundColor: isDarkMode ? '#4b5563' : '#cbd5e1' }]}>TM</Text>
+            <Text style={[styles.phoneNumber, { color: colors.text }]}>{phone ? `+${phone}` : '+6308312035'}</Text>
           </View>
           <View style={styles.profileSection}>
             <TouchableOpacity onPress={() => setNotifVisible(true)} style={{ position: 'relative' }}>
-              <MaterialIcons name="notifications-none" size={28} color="white" style={{ marginRight: 12 }} />
+              <MaterialIcons name="notifications-none" size={28} color={colors.text} style={{ marginRight: 12 }} />
               {unreadCount > 0 && (
-                <View style={styles.badgeContainer}>
+                <View style={[styles.badgeContainer, { borderColor: colors.background }]}>
                   <Text style={styles.badgeText}>{unreadCount}</Text>
                 </View>
               )}
             </TouchableOpacity>
-            <View style={styles.avatarContainer}>
+            <View style={[styles.avatarContainer, { borderColor: colors.border }]}>
               <View style={styles.avatarPlaceholder}>
                 <Text style={styles.avatarText}>{summaryData?.full_name ? summaryData.full_name.charAt(0).toUpperCase() : 'U'}</Text>
               </View>
@@ -314,7 +316,7 @@ export default function DashboardScreen() {
         )}
 
         {/* Main Usage Card — Figma-aligned with progress bar */}
-        <View style={styles.mainCard}>
+        <View style={[styles.mainCard, { backgroundColor: colors.card }]}>
           {/* Stats Row */}
           <View style={styles.statsRow}>
             <StatItem
@@ -360,8 +362,8 @@ export default function DashboardScreen() {
           </View>
 
           {/* Consumption Rate */}
-          <Text style={styles.consumptionPercent}>{percentUsed}%</Text>
-          <Text style={styles.consumptionLabel}>Consumption Rate</Text>
+          <Text style={[styles.consumptionPercent, { color: colors.text }]}>{percentUsed}%</Text>
+          <Text style={[styles.consumptionLabel, { color: colors.textMuted }]}>Consumption Rate</Text>
 
           {/* Usage Pace Badge */}
           <View style={[styles.paceButton, { backgroundColor: paceConfig.buttonColor }]}>
@@ -370,8 +372,8 @@ export default function DashboardScreen() {
         </View>
 
         {/* SET DATA BUDGET Section — Figma-matching */}
-        <View style={styles.budgetCard}>
-          <Text style={styles.budgetTitle}>SET DATA BUDGET</Text>
+        <View style={[styles.budgetCard, { backgroundColor: colors.card }]}>
+          <Text style={[styles.budgetTitle, { color: colors.text }]}>SET DATA BUDGET</Text>
           <View style={styles.budgetRow}>
             <TouchableOpacity 
               style={[styles.startButton, isTracking && styles.startButtonActive]}
@@ -380,25 +382,25 @@ export default function DashboardScreen() {
               <MaterialIcons name="play-arrow" size={28} color="white" />
               <Text style={styles.startButtonText}>{isTracking ? 'TRACKING' : 'START'}</Text>
             </TouchableOpacity>
-            <View style={styles.limitBox}>
-              <Text style={styles.limitLabel}>SET LIMIT</Text>
-              <Text style={styles.limitValue}>{dataLimit}mb</Text>
+            <View style={[styles.limitBox, { backgroundColor: colors.cardAlt, borderColor: colors.border }]}>
+              <Text style={[styles.limitLabel, { color: colors.textMuted }]}>SET LIMIT</Text>
+              <Text style={[styles.limitValue, { color: colors.text }]}>{dataLimit}mb</Text>
             </View>
           </View>
         </View>
 
         {/* Data Consumption Card — Figma-matching */}
-        <View style={styles.consumptionCard}>
+        <View style={[styles.consumptionCard, { backgroundColor: colors.card }]}>
           <View style={styles.consumptionHeader}>
             <MaterialIcons name="bar-chart" size={22} color="#3b82f6" />
-            <Text style={styles.consumptionCardTitle}>Data Consumption</Text>
+            <Text style={[styles.consumptionCardTitle, { color: colors.text }]}>Data Consumption</Text>
           </View>
           <View style={styles.consumptionBody}>
             <View style={styles.consumptionLeft}>
-              <Text style={styles.consumptionBigNumber}>
+              <Text style={[styles.consumptionBigNumber, { color: colors.text }]}>
                 {summaryData ? Math.round(summaryData.daily_average_mb / 24) : 0}
-                <Text style={styles.consumptionUnit}> MB</Text>
-                <Text style={styles.consumptionPerMin}> /min</Text>
+                <Text style={[styles.consumptionUnit, { color: colors.textMuted }]}> MB</Text>
+                <Text style={[styles.consumptionPerMin, { color: colors.textMuted }]}> /min</Text>
               </Text>
               <TouchableOpacity style={styles.seeDetailsBtn} onPress={handleHistory}>
                 <Text style={styles.seeDetailsText}>SEE DETAILS</Text>
@@ -416,72 +418,72 @@ export default function DashboardScreen() {
         </View>
 
         {/* Interactive Simulation Controls */}
-        <View style={styles.simulationCard}>
-          <Text style={styles.simulationTitle}>Interactive Prediction Simulator</Text>
-          <Text style={styles.simulationSubtitle}>Adjust variables to see real-time dynamic ML projections:</Text>
+        <View style={[styles.simulationCard, { backgroundColor: colors.cardAlt }]}>
+          <Text style={[styles.simulationTitle, { color: colors.text }]}>Interactive Prediction Simulator</Text>
+          <Text style={[styles.simulationSubtitle, { color: colors.textMuted }]}>Adjust variables to see real-time dynamic ML projections:</Text>
           
           {/* Control 1: Remaining Data */}
-          <View style={styles.controlRow}>
+          <View style={[styles.controlRow, { borderBottomColor: colors.border }]}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.controlLabel}>Remaining Data</Text>
+              <Text style={[styles.controlLabel, { color: colors.text }]}>Remaining Data</Text>
               <Text style={styles.controlValue}>{remainingMb.toFixed(0)} MB</Text>
             </View>
             <View style={styles.stepperContainer}>
               <TouchableOpacity 
-                style={styles.stepperButton} 
+                style={[styles.stepperButton, { backgroundColor: isDarkMode ? '#334155' : '#cbd5e1' }]} 
                 onPress={() => setRemainingMb(prev => Math.max(0.0, prev - 500))}
               >
-                <Text style={styles.stepperText}>-</Text>
+                <Text style={[styles.stepperText, { color: colors.text }]}>-</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={styles.stepperButton} 
+                style={[styles.stepperButton, { backgroundColor: isDarkMode ? '#334155' : '#cbd5e1' }]} 
                 onPress={() => setRemainingMb(prev => Math.min(summary.total_limit_mb, prev + 500))}
               >
-                <Text style={styles.stepperText}>+</Text>
+                <Text style={[styles.stepperText, { color: colors.text }]}>+</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           {/* Control 2: Screen-on Time */}
-          <View style={styles.controlRow}>
+          <View style={[styles.controlRow, { borderBottomColor: colors.border }]}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.controlLabel}>Est. Screen On Time</Text>
+              <Text style={[styles.controlLabel, { color: colors.text }]}>Est. Screen On Time</Text>
               <Text style={styles.controlValue}>{screenOnHours.toFixed(1)} hrs/day</Text>
             </View>
             <View style={styles.stepperContainer}>
               <TouchableOpacity 
-                style={styles.stepperButton} 
+                style={[styles.stepperButton, { backgroundColor: isDarkMode ? '#334155' : '#cbd5e1' }]} 
                 onPress={() => setScreenOnHours(prev => Math.max(0.0, prev - 0.5))}
               >
-                <Text style={styles.stepperText}>-</Text>
+                <Text style={[styles.stepperText, { color: colors.text }]}>-</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={styles.stepperButton} 
+                style={[styles.stepperButton, { backgroundColor: isDarkMode ? '#334155' : '#cbd5e1' }]} 
                 onPress={() => setScreenOnHours(prev => Math.min(24.0, prev + 0.5))}
               >
-                <Text style={styles.stepperText}>+</Text>
+                <Text style={[styles.stepperText, { color: colors.text }]}>+</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           {/* Control 3: Battery Level */}
-          <View style={styles.controlRow}>
+          <View style={[styles.controlRow, { borderBottomColor: colors.border, borderBottomWidth: 0 }]}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.controlLabel}>Battery Level</Text>
+              <Text style={[styles.controlLabel, { color: colors.text }]}>Battery Level</Text>
               <Text style={styles.controlValue}>{batteryLevel.toFixed(0)}%</Text>
             </View>
             <View style={styles.stepperContainer}>
               <TouchableOpacity 
-                style={styles.stepperButton} 
+                style={[styles.stepperButton, { backgroundColor: isDarkMode ? '#334155' : '#cbd5e1' }]} 
                 onPress={() => setBatteryLevel(prev => Math.max(0.0, prev - 5))}
               >
-                <Text style={styles.stepperText}>-</Text>
+                <Text style={[styles.stepperText, { color: colors.text }]}>-</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={styles.stepperButton} 
+                style={[styles.stepperButton, { backgroundColor: isDarkMode ? '#334155' : '#cbd5e1' }]} 
                 onPress={() => setBatteryLevel(prev => Math.min(100.0, prev + 5))}
               >
-                <Text style={styles.stepperText}>+</Text>
+                <Text style={[styles.stepperText, { color: colors.text }]}>+</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -498,7 +500,7 @@ export default function DashboardScreen() {
 
       {/* Bottom Navigation */}
       <View style={styles.bottomNavContainer}>
-        <View style={styles.bottomNavWrapper}>
+        <View style={[styles.bottomNavWrapper, { backgroundColor: colors.card, borderColor: colors.navBorder }]}>
           <BottomNavItem
             iconName="home"
             label="HOME"
