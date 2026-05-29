@@ -15,6 +15,7 @@ import {
     Alert,
     Platform,
 } from 'react-native';
+import * as DocumentPicker from 'expo-document-picker';
 import { API_BASE_URL } from '../../constants/Config';
 
 import { BottomNavItem } from '../../components/BottomNavItem';
@@ -149,21 +150,50 @@ export default function HistoryScreen() {
         }
     };
 
-    // Upload CSV to global pool (connected to sync endpoint)
+    // Upload CSV from device to global CSV pool
     const handleUploadCSV = async () => {
-        setIsUploading(true);
         try {
-            const storedToken = await AsyncStorage.getItem('userToken');
-            if (!storedToken) return;
+            // Open file picker for CSV files
+            const result = await DocumentPicker.getDocumentAsync({
+                type: ['text/csv', 'text/comma-separated-values', 'application/csv'],
+                copyToCacheDirectory: true,
+            });
 
-            const res = await fetch(`${API_BASE_URL}/api/sync/upload-global/`, {
+            if (result.canceled || !result.assets || result.assets.length === 0) {
+                return; // User cancelled
+            }
+
+            const file = result.assets[0];
+            setIsUploading(true);
+
+            const storedToken = await AsyncStorage.getItem('userToken');
+            if (!storedToken) {
+                if (Platform.OS === 'web') window.alert("Please log in again.");
+                else Alert.alert("Error", "Please log in again.");
+                return;
+            }
+
+            // Build FormData with the selected file
+            const formData = new FormData();
+            formData.append('csv_file', {
+                uri: file.uri,
+                name: file.name || 'upload.csv',
+                type: file.mimeType || 'text/csv',
+            } as any);
+
+            const res = await fetch(`${API_BASE_URL}/api/sync/upload-csv/`, {
                 method: 'POST',
-                headers: { 'Authorization': `Token ${storedToken}` }
+                headers: {
+                    'Authorization': `Token ${storedToken}`,
+                },
+                body: formData,
             });
 
             if (res.ok) {
-                if (Platform.OS === 'web') window.alert("CSV uploaded to global pool successfully!");
-                else Alert.alert("Success", "CSV uploaded to global pool successfully!");
+                const data = await res.json();
+                const msg = `CSV uploaded successfully!\nFile: ${data.filename}\nRecords: ${data.records}`;
+                if (Platform.OS === 'web') window.alert(msg);
+                else Alert.alert("Success", msg);
             } else {
                 const errData = await res.json();
                 const msg = errData.error || "Failed to upload CSV.";
@@ -171,8 +201,9 @@ export default function HistoryScreen() {
                 else Alert.alert("Error", msg);
             }
         } catch (e) {
-            if (Platform.OS === 'web') window.alert("Network error uploading CSV.");
-            else Alert.alert("Error", "Network error uploading CSV.");
+            console.error("Upload CSV error:", e);
+            if (Platform.OS === 'web') window.alert("Error selecting or uploading CSV file.");
+            else Alert.alert("Error", "Error selecting or uploading CSV file.");
         } finally {
             setIsUploading(false);
         }

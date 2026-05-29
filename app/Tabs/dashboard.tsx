@@ -95,6 +95,8 @@ export default function DashboardScreen() {
     let ws: WebSocket | null = null;
     let reconnectTimeout: any = null;
     let isMounted = true;
+    let retryCount = 0;
+    const MAX_RETRIES = 5;
 
     const fetchSummaryAndConnect = async () => {
       try {
@@ -124,8 +126,8 @@ export default function DashboardScreen() {
 
             ws.onopen = () => {
               console.log("WebSocket prediction connection opened.");
-              // Send current stats with a mock package expiry (e.g. 3 days from now)
-              const expiryTime = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+              retryCount = 0; // Reset on successful connection
+              const expiryTime = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
               ws?.send(JSON.stringify({
                 remaining_mb: initialRemaining,
                 expiry_time: expiryTime,
@@ -157,9 +159,13 @@ export default function DashboardScreen() {
             };
 
             ws.onclose = () => {
-              console.log("WebSocket closed. Attempting reconnect in 3 seconds...");
-              if (isMounted) {
-                reconnectTimeout = setTimeout(connectWS, 3000);
+              if (isMounted && retryCount < MAX_RETRIES) {
+                retryCount++;
+                const delay = Math.min(3000 * Math.pow(2, retryCount - 1), 30000);
+                console.log(`WebSocket closed. Retry ${retryCount}/${MAX_RETRIES} in ${delay / 1000}s...`);
+                reconnectTimeout = setTimeout(connectWS, delay);
+              } else if (retryCount >= MAX_RETRIES) {
+                console.log("WebSocket max retries reached. Predictions will use fallback values.");
               }
             };
           };
@@ -194,17 +200,23 @@ export default function DashboardScreen() {
     progressColor: "#16a34a",
   };
 
-  if (percent >= 90) {
+  if (percentUsed >= 90) {
     paceConfig = {
       text: "USAGE: EXTREME PACE",
       buttonColor: "#dc2626", // Red
       progressColor: "#dc2626",
     };
-  } else if (percent >= 75) {
+  } else if (percentUsed >= 75) {
     paceConfig = {
       text: "USAGE: WARNING PACE",
       buttonColor: "#ea580c", // Orange
       progressColor: "#ea580c",
+    };
+  } else if (percentUsed >= 50) {
+    paceConfig = {
+      text: "USAGE: MODERATE PACE",
+      buttonColor: "#3b82f6", // Blue
+      progressColor: "#3b82f6",
     };
   }
 
@@ -284,7 +296,7 @@ export default function DashboardScreen() {
         </View>
 
         {/* Real-time Warning Banner */}
-        {prediction.runs_out_before_expiry && (
+        {prediction.runs_out_before_expiry && percentUsed >= 75 && (
           <View style={styles.alertBanner}>
             <MaterialIcons name="warning" size={24} color="white" />
             <View style={{ flex: 1 }}>
