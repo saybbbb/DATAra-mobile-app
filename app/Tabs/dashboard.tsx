@@ -29,11 +29,6 @@ export default function DashboardScreen() {
   const { isDarkMode, colors } = useTheme();
   const wsRef = useRef<WebSocket | null>(null);
 
-  // Dynamic prediction inputs
-  const [remainingMb, setRemainingMb] = useState(5000.0);
-  const [screenOnHours, setScreenOnHours] = useState(4.0);
-  const [batteryLevel, setBatteryLevel] = useState(80.0);
-
   // Data budget
   const [dataLimit, setDataLimit] = useState('350');
   const [isTracking, setIsTracking] = useState(false);
@@ -115,7 +110,6 @@ export default function DashboardScreen() {
           const data = await res.json();
           if (isMounted) {
             setSummary(data);
-            setRemainingMb(Math.max(0.0, data.total_limit_mb - data.total_used_mb));
           }
 
           // Establish real-time WebSocket prediction connection
@@ -135,8 +129,8 @@ export default function DashboardScreen() {
               ws?.send(JSON.stringify({
                 remaining_mb: initialRemaining,
                 expiry_time: expiryTime,
-                screen_on: screenOnHours,
-                battery_level: batteryLevel
+                screen_on: 4.0,
+                battery_level: 80.0
               }));
             };
 
@@ -188,19 +182,6 @@ export default function DashboardScreen() {
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
     };
   }, [phone]);
-
-  // Handle live simulation input changes
-  useEffect(() => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      const expiryTime = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
-      wsRef.current.send(JSON.stringify({
-        remaining_mb: remainingMb,
-        expiry_time: expiryTime,
-        screen_on: screenOnHours,
-        battery_level: batteryLevel
-      }));
-    }
-  }, [remainingMb, screenOnHours, batteryLevel]);
 
   const currentPace = prediction.usage_pace || 'normal';
   const percentUsed = summary.total_limit_mb > 0
@@ -413,78 +394,6 @@ export default function DashboardScreen() {
               <View style={[styles.bar, { height: getBarHeight(2) }]} />
               <View style={[styles.bar, { height: getBarHeight(3) }]} />
               <View style={[styles.bar, { height: getBarHeight(4) }]} />
-            </View>
-          </View>
-        </View>
-
-        {/* Interactive Simulation Controls */}
-        <View style={[styles.simulationCard, { backgroundColor: colors.cardAlt }]}>
-          <Text style={[styles.simulationTitle, { color: colors.text }]}>Interactive Prediction Simulator</Text>
-          <Text style={[styles.simulationSubtitle, { color: colors.textMuted }]}>Adjust variables to see real-time dynamic ML projections:</Text>
-          
-          {/* Control 1: Remaining Data */}
-          <View style={[styles.controlRow, { borderBottomColor: colors.border }]}>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.controlLabel, { color: colors.text }]}>Remaining Data</Text>
-              <Text style={styles.controlValue}>{remainingMb.toFixed(0)} MB</Text>
-            </View>
-            <View style={styles.stepperContainer}>
-              <TouchableOpacity 
-                style={[styles.stepperButton, { backgroundColor: isDarkMode ? '#334155' : '#cbd5e1' }]} 
-                onPress={() => setRemainingMb(prev => Math.max(0.0, prev - 500))}
-              >
-                <Text style={[styles.stepperText, { color: colors.text }]}>-</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.stepperButton, { backgroundColor: isDarkMode ? '#334155' : '#cbd5e1' }]} 
-                onPress={() => setRemainingMb(prev => Math.min(summary.total_limit_mb, prev + 500))}
-              >
-                <Text style={[styles.stepperText, { color: colors.text }]}>+</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Control 2: Screen-on Time */}
-          <View style={[styles.controlRow, { borderBottomColor: colors.border }]}>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.controlLabel, { color: colors.text }]}>Est. Screen On Time</Text>
-              <Text style={styles.controlValue}>{screenOnHours.toFixed(1)} hrs/day</Text>
-            </View>
-            <View style={styles.stepperContainer}>
-              <TouchableOpacity 
-                style={[styles.stepperButton, { backgroundColor: isDarkMode ? '#334155' : '#cbd5e1' }]} 
-                onPress={() => setScreenOnHours(prev => Math.max(0.0, prev - 0.5))}
-              >
-                <Text style={[styles.stepperText, { color: colors.text }]}>-</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.stepperButton, { backgroundColor: isDarkMode ? '#334155' : '#cbd5e1' }]} 
-                onPress={() => setScreenOnHours(prev => Math.min(24.0, prev + 0.5))}
-              >
-                <Text style={[styles.stepperText, { color: colors.text }]}>+</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Control 3: Battery Level */}
-          <View style={[styles.controlRow, { borderBottomColor: colors.border, borderBottomWidth: 0 }]}>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.controlLabel, { color: colors.text }]}>Battery Level</Text>
-              <Text style={styles.controlValue}>{batteryLevel.toFixed(0)}%</Text>
-            </View>
-            <View style={styles.stepperContainer}>
-              <TouchableOpacity 
-                style={[styles.stepperButton, { backgroundColor: isDarkMode ? '#334155' : '#cbd5e1' }]} 
-                onPress={() => setBatteryLevel(prev => Math.max(0.0, prev - 5))}
-              >
-                <Text style={[styles.stepperText, { color: colors.text }]}>-</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.stepperButton, { backgroundColor: isDarkMode ? '#334155' : '#cbd5e1' }]} 
-                onPress={() => setBatteryLevel(prev => Math.min(100.0, prev + 5))}
-              >
-                <Text style={[styles.stepperText, { color: colors.text }]}>+</Text>
-              </TouchableOpacity>
             </View>
           </View>
         </View>

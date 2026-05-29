@@ -1,6 +1,6 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, Stack } from 'expo-router';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     SafeAreaView,
     ScrollView,
@@ -28,6 +28,99 @@ export default function SettingsScreen() {
     const { phone } = useUser();
     const { isDarkMode, setIsDarkMode, colors } = useTheme();
     const [strictDataSaver, setStrictDataSaver] = useState(false);
+
+    // Simulator states
+    const [isSimModalVisible, setSimModalVisible] = useState(false);
+    const [simRemainingMb, setSimRemainingMb] = useState(5000.0);
+    const [simScreenOnHours, setSimScreenOnHours] = useState(4.0);
+    const [simBatteryLevel, setSimBatteryLevel] = useState(80.0);
+    const [simPrediction, setSimPrediction] = useState<any>({
+        hours_remaining: 8.0,
+        depletion_time: '',
+        runs_out_before_expiry: false,
+        usage_pace: 'normal',
+        hours_to_expiry: 72.0
+    });
+    const simWsRef = useRef<WebSocket | null>(null);
+
+    const openSimModal = async () => {
+        setSimModalVisible(true);
+        try {
+            const storedToken = await AsyncStorage.getItem('userToken');
+            if (!storedToken) return;
+
+            const res = await fetch(`${API_BASE_URL}/api/usage/summary/`, {
+                headers: { 'Authorization': `Token ${storedToken}` }
+            });
+            let initialRemaining = 5000.0;
+            if (res.ok) {
+                const data = await res.json();
+                initialRemaining = Math.max(0.0, data.total_limit_mb - data.total_used_mb);
+                setSimRemainingMb(initialRemaining);
+            }
+
+            console.log("Simulator connecting to WebSocket: ", `${WS_URL}/ws/predictions/?token=${storedToken}`);
+            const ws = new WebSocket(`${WS_URL}/ws/predictions/?token=${storedToken}`);
+            simWsRef.current = ws;
+
+            ws.onopen = () => {
+                const expiryTime = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+                ws.send(JSON.stringify({
+                    remaining_mb: initialRemaining,
+                    expiry_time: expiryTime,
+                    screen_on: simScreenOnHours,
+                    battery_level: simBatteryLevel
+                }));
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const response = JSON.parse(event.data);
+                    if (response.status === 'prediction_updated') {
+                        setSimPrediction({
+                            hours_remaining: response.hours_remaining,
+                            depletion_time: response.depletion_time,
+                            runs_out_before_expiry: response.runs_out_before_expiry,
+                            usage_pace: response.usage_pace,
+                            hours_to_expiry: response.hours_to_expiry
+                        });
+                    }
+                } catch (err) {
+                    console.error("Error parsing simulator WebSocket payload:", err);
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error("Simulator WebSocket error:", error);
+            };
+
+            ws.onclose = () => {
+                console.log("Simulator WebSocket closed.");
+            };
+        } catch (e) {
+            console.error("Error setting up simulator WebSocket:", e);
+        }
+    };
+
+    const closeSimModal = () => {
+        setSimModalVisible(false);
+        if (simWsRef.current) {
+            simWsRef.current.close();
+            simWsRef.current = null;
+        }
+    };
+
+    useEffect(() => {
+        if (isSimModalVisible && simWsRef.current && simWsRef.current.readyState === WebSocket.OPEN) {
+            const expiryTime = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+            simWsRef.current.send(JSON.stringify({
+                remaining_mb: simRemainingMb,
+                expiry_time: expiryTime,
+                screen_on: simScreenOnHours,
+                battery_level: simBatteryLevel
+            }));
+        }
+    }, [simRemainingMb, simScreenOnHours, simBatteryLevel, isSimModalVisible]);
     const [pushEnabled, setPushEnabled] = useState(true);
     const [activeTab, setActiveTab] = useState('Settings');
 
@@ -401,6 +494,15 @@ export default function SettingsScreen() {
                         <MaterialIcons name="chevron-right" size={24} color="#64748b" />
                     </TouchableOpacity>
 
+                    {/* Interactive Prediction Simulator */}
+                    <TouchableOpacity style={[styles.row, { borderBottomColor: colors.border }]} onPress={openSimModal}>
+                        <View style={[styles.rowIconContainer, { backgroundColor: '#1e1b4b' }]}>
+                            <MaterialIcons name="online-prediction" size={22} color="#a5b4fc" />
+                        </View>
+                        <Text style={[styles.rowText, { color: colors.text }]}>Prediction Simulator</Text>
+                        <MaterialIcons name="chevron-right" size={24} color="#64748b" />
+                    </TouchableOpacity>
+
                     {/* Delete Account */}
                     <TouchableOpacity style={[styles.row, { borderBottomWidth: 0 }]} onPress={() => setDeleteModalVisible(true)}>
                         <View style={[styles.rowIconContainer, { backgroundColor: '#3b0f0f' }]}>
@@ -714,6 +816,121 @@ export default function SettingsScreen() {
                     </View>
                 </View>
             </Modal>
+
+            {/* Interactive Prediction Simulator Modal */}
+            <Modal visible={isSimModalVisible} transparent={true} animationType="fade">
+                <View style={styles.modalOverlay}>
+                    <View style={[styles.modalContent, { backgroundColor: colors.cardAlt }]}>
+                        <MaterialIcons name="online-prediction" size={48} color="#a5b4fc" style={{ alignSelf: 'center', marginBottom: 16 }} />
+                        <Text style={[styles.modalTitle, { color: colors.text }]}>Interactive Prediction Simulator</Text>
+                        
+                        <Text style={[styles.modalMessage, { color: colors.textMuted }]}>
+                            Adjust variables to simulate hypothetical usage scenarios and see how the ML model projects data lifespan in real time.
+                        </Text>
+                        
+                        <View style={{ marginBottom: 20 }}>
+                            {/* Control 1: Remaining Data */}
+                            <View style={[styles.controlRow, { borderBottomColor: colors.border }]}>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={[styles.controlLabel, { color: colors.text }]}>Remaining Data</Text>
+                                    <Text style={styles.controlValue}>{simRemainingMb.toFixed(0)} MB</Text>
+                                </View>
+                                <View style={styles.stepperContainer}>
+                                    <TouchableOpacity 
+                                        style={[styles.stepperButton, { backgroundColor: isDarkMode ? '#334155' : '#cbd5e1' }]} 
+                                        onPress={() => setSimRemainingMb(prev => Math.max(0.0, prev - 500))}
+                                    >
+                                        <Text style={[styles.stepperText, { color: colors.text }]}>-</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity 
+                                        style={[styles.stepperButton, { backgroundColor: isDarkMode ? '#334155' : '#cbd5e1' }]} 
+                                        onPress={() => setSimRemainingMb(prev => prev + 500)}
+                                    >
+                                        <Text style={[styles.stepperText, { color: colors.text }]}>+</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+
+                            {/* Control 2: Screen-on Time */}
+                            <View style={[styles.controlRow, { borderBottomColor: colors.border }]}>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={[styles.controlLabel, { color: colors.text }]}>Est. Screen On Time</Text>
+                                    <Text style={styles.controlValue}>{simScreenOnHours.toFixed(1)} hrs/day</Text>
+                                </View>
+                                <View style={styles.stepperContainer}>
+                                    <TouchableOpacity 
+                                        style={[styles.stepperButton, { backgroundColor: isDarkMode ? '#334155' : '#cbd5e1' }]} 
+                                        onPress={() => setSimScreenOnHours(prev => Math.max(0.0, prev - 0.5))}
+                                    >
+                                        <Text style={[styles.stepperText, { color: colors.text }]}>-</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity 
+                                        style={[styles.stepperButton, { backgroundColor: isDarkMode ? '#334155' : '#cbd5e1' }]} 
+                                        onPress={() => setSimScreenOnHours(prev => Math.min(24.0, prev + 0.5))}
+                                    >
+                                        <Text style={[styles.stepperText, { color: colors.text }]}>+</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+
+                            {/* Control 3: Battery Level */}
+                            <View style={[styles.controlRow, { borderBottomColor: colors.border, borderBottomWidth: 0 }]}>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={[styles.controlLabel, { color: colors.text }]}>Battery Level</Text>
+                                    <Text style={styles.controlValue}>{simBatteryLevel.toFixed(0)}%</Text>
+                                </View>
+                                <View style={styles.stepperContainer}>
+                                    <TouchableOpacity 
+                                        style={[styles.stepperButton, { backgroundColor: isDarkMode ? '#334155' : '#cbd5e1' }]} 
+                                        onPress={() => setSimBatteryLevel(prev => Math.max(0.0, prev - 5))}
+                                    >
+                                        <Text style={[styles.stepperText, { color: colors.text }]}>-</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity 
+                                        style={[styles.stepperButton, { backgroundColor: isDarkMode ? '#334155' : '#cbd5e1' }]} 
+                                        onPress={() => setSimBatteryLevel(prev => Math.min(100.0, prev + 5))}
+                                    >
+                                        <Text style={[styles.stepperText, { color: colors.text }]}>+</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+
+                        {/* Simulation Results Section */}
+                        <View style={[styles.reportSection, { marginTop: 10, padding: 16, backgroundColor: colors.card, borderRadius: 16 }]}>
+                            <Text style={[styles.reportSectionTitle, { color: isDarkMode ? '#a5b4fc' : '#4f46e5' }]}>SIMULATION RESULTS</Text>
+                            <View style={[styles.mlMetricRow, { borderBottomColor: colors.border }]}>
+                                <Text style={[styles.mlMetricLabel, { color: colors.textMuted }]}>Projected Pace</Text>
+                                <Text style={[styles.mlMetricValue, { 
+                                    color: simPrediction.usage_pace === 'extreme' ? '#ef4444' : simPrediction.usage_pace === 'warning' ? '#f59e0b' : '#22c55e',
+                                    textTransform: 'uppercase'
+                                }]}>
+                                    {simPrediction.usage_pace}
+                                </Text>
+                            </View>
+                            <View style={[styles.mlMetricRow, { borderBottomColor: colors.border }]}>
+                                <Text style={[styles.mlMetricLabel, { color: colors.textMuted }]}>Est. Hours Remaining</Text>
+                                <Text style={[styles.mlMetricValue, { color: colors.text }]}>
+                                    {simPrediction.hours_remaining.toFixed(1)} hrs
+                                </Text>
+                            </View>
+                            <View style={[styles.mlMetricRow, { borderBottomWidth: 0 }]}>
+                                <Text style={[styles.mlMetricLabel, { color: colors.textMuted }]}>Depletion Forecast</Text>
+                                <Text style={[styles.mlMetricValue, { color: colors.text }]}>
+                                    {simPrediction.depletion_time ? new Date(simPrediction.depletion_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'N/A'}
+                                </Text>
+                            </View>
+                        </View>
+
+                        <TouchableOpacity 
+                            style={[styles.mlCloseButton, { backgroundColor: '#6366f1' }]} 
+                            onPress={closeSimModal}
+                        >
+                            <Text style={styles.modalButtonText}>Close Simulator</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -991,5 +1208,40 @@ const styles = StyleSheet.create({
         fontSize: 12,
         lineHeight: 18,
         flex: 1,
+    },
+    controlRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+    },
+    controlLabel: {
+        fontSize: 13,
+        fontWeight: '500',
+    },
+    controlValue: {
+        color: '#3b82f6',
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginTop: 2,
+    },
+    stepperContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    stepperButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    stepperText: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        lineHeight: 22,
     },
 });
