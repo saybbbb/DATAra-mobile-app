@@ -24,7 +24,6 @@ import { ProfileCard } from '../../components/ProfileCard';
 
 // Default cartoon character matching the user's style
 const DEFAULT_AVATAR_URI = 'https://api.dicebear.com/7.x/adventurer/png?seed=Charlie';
-import { API_URL } from '../../context/ApiConfig';
 
 export default function ProfileScreen() {
     const { phone } = useUser();
@@ -63,7 +62,6 @@ export default function ProfileScreen() {
             if (storedToken) {
                 setToken(storedToken);
                 try {
-                    const res = await fetch(`${API_URL}/api/profile/`, {
                     const res = await fetch(`${API_BASE_URL}/api/profile/`, {
                         headers: { 'Authorization': `Token ${storedToken}` }
                     });
@@ -153,7 +151,6 @@ export default function ProfileScreen() {
                 headers['Authorization'] = `Token ${token}`;
             }
 
-            const response = await fetch(`${API_URL}/api/profile/`, {
             const response = await fetch(`${API_BASE_URL}/api/profile/`, {
                 method: 'PUT',
                 headers,
@@ -250,22 +247,6 @@ export default function ProfileScreen() {
                 <Text style={styles.profilePhotoText}>PROFILE PHOTO</Text>
             </View>
 
-                {/* Info Boxes */}
-                <View style={styles.infoContainer}>
-                    <TouchableOpacity style={styles.infoBox} onPress={() => setNameModalVisible(true)}>
-                        <Text style={styles.infoText}>{profile?.full_name || 'Charlie C. Omongos'}</Text>
-                        <MaterialIcons name="edit" size={20} color="#64748b" style={styles.editIcon} />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.infoBox} onPress={() => setAddressModalVisible(true)}>
-                        <Text style={styles.infoText}>{profile?.address || 'Zone 13 B, Puli, Carmen, CDO'}</Text>
-                        <MaterialIcons name="edit" size={20} color="#64748b" style={styles.editIcon} />
-                    </TouchableOpacity>
-
-                    <View style={styles.infoBox}>
-                        <Text style={styles.infoText}>{profile?.provider || 'DESU'}</Text>
-                    </View>
-                </View>
             {/* Content Area (Light Gray Background) */}
             <ScrollView 
                 style={styles.contentScroll} 

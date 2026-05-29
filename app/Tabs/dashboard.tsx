@@ -9,10 +9,9 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
   ActivityIndicator,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../../constants/Config';
 
 import { BottomNavItem } from '../../components/BottomNavItem';
@@ -20,7 +19,7 @@ import NotificationPanel, { Notification } from '../../components/NotificationPa
 import { SmallCard } from '../../components/SmallCard';
 import { StatItem } from '../../components/StatItem';
 import { useUser } from '../../context/UserContext';
-import { API_URL, WS_URL } from '../../context/ApiConfig';
+import { WS_URL } from '../../context/ApiConfig';
 
 export default function DashboardScreen() {
   const { phone, readNotifIds, setReadNotifIds } = useUser();
@@ -50,7 +49,9 @@ export default function DashboardScreen() {
 
       const sumRes = await fetch(`${API_BASE_URL}/api/usage/summary/`, { headers });
       if (sumRes.ok) {
-        setSummaryData(await sumRes.json());
+        const data = await sumRes.json();
+        setSummaryData(data);
+        setSummary(data);
       }
 
       const usageRes = await fetch(`${API_BASE_URL}/api/usage/`, { headers });
@@ -89,7 +90,7 @@ export default function DashboardScreen() {
 
   useEffect(() => {
     let ws: WebSocket | null = null;
-    let reconnectTimeout: NodeJS.Timeout | null = null;
+    let reconnectTimeout: any = null;
     let isMounted = true;
 
     const fetchSummaryAndConnect = async () => {
@@ -98,7 +99,7 @@ export default function DashboardScreen() {
         if (!token) return;
 
         // Fetch dashboard summary statistics
-        const res = await fetch(`${API_URL}/api/usage/summary/`, {
+        const res = await fetch(`${API_BASE_URL}/api/usage/summary/`, {
           headers: { 'Authorization': `Token ${token}` }
         });
 
@@ -330,32 +331,24 @@ export default function DashboardScreen() {
           {/* Greeting */}
           <View style={styles.greetingContainer}>
             <Text style={styles.greetingText}>
-              Hi <Text style={styles.greetingName}>{summaryData?.full_name || 'User'}!</Text>
+              Hi <Text style={styles.greetingName}>{summary.full_name || summaryData?.full_name || 'User'}!</Text>
             </Text>
             <Text style={styles.subtitleText}>This is your current Usage</Text>
           </View>
         </View>
-            {/* Greeting */}
-            <View style={styles.greetingContainer}>
-              <Text style={styles.greetingText}>
-                Hi <Text style={styles.greetingName}>{summary.full_name || 'User'}!</Text>
+
+        {/* Real-time Warning Banner */}
+        {prediction.runs_out_before_expiry && (
+          <View style={styles.alertBanner}>
+            <MaterialIcons name="warning" size={24} color="white" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.alertTitle}>DATA DEPLETING FAST</Text>
+              <Text style={styles.alertText}>
+                Your data is projected to run out in {prediction.hours_remaining} hrs (around {prediction.depletion_time ? new Date(prediction.depletion_time).toLocaleDateString() : 'soon'}), which is BEFORE your dedicated expiry!
               </Text>
-              <Text style={styles.subtitleText}>This is your current Usage</Text>
             </View>
           </View>
-
-          {/* Real-time Warning Banner */}
-          {prediction.runs_out_before_expiry && (
-            <View style={styles.alertBanner}>
-              <MaterialIcons name="warning" size={24} color="white" />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.alertTitle}>DATA DEPLETING FAST</Text>
-                <Text style={styles.alertText}>
-                  Your data is projected to run out in {prediction.hours_remaining} hrs (around {prediction.depletion_time ? new Date(prediction.depletion_time).toLocaleDateString() : 'soon'}), which is BEFORE your dedicated expiry!
-                </Text>
-              </View>
-            </View>
-          )}
+        )}
 
         {/* Main Usage Card */}
         <View style={styles.mainCard}>
@@ -364,7 +357,7 @@ export default function DashboardScreen() {
             <View style={[styles.circleOuter, getRingStyles()]}>
               <View style={styles.circleInner}>
                 <Text style={styles.circleTextMain}>
-                  {percent}%
+                  {percentUsed}%
                 </Text>
               </View>
             </View>
@@ -377,15 +370,19 @@ export default function DashboardScreen() {
               iconColor="#16a34a"
               iconBgColor="#dcfce7"
               label="Total Used"
-              value={summaryData ? `${(summaryData.total_used_mb / 1024).toFixed(2)} GB` : "0 GB"}
-              subValue={`OUT OF ${summaryData ? Math.round(summaryData.total_limit_mb / 1024) : 0} GB`}
+              value={summary.total_used_mb >= 1024 
+                ? `${(summary.total_used_mb / 1024).toFixed(1)} GB`
+                : `${Math.round(summary.total_used_mb)} MB`}
+              subValue={`OUT OF ${Math.round(summary.total_limit_mb / 1024)} GB`}
             />
             <StatItem
               icon="schedule"
               iconColor="#1d4ed8"
               iconBgColor="#dbeafe"
               label="Predicted"
-              value="8hrs"
+              value={prediction.hours_remaining >= 24 
+                ? `${Math.round(prediction.hours_remaining / 24)} days`
+                : `${Math.round(prediction.hours_remaining)} hrs`}
               subValue="LEFT"
             />
             <StatItem
@@ -393,43 +390,12 @@ export default function DashboardScreen() {
               iconColor="#1d4ed8"
               iconBgColor="#dbeafe"
               label="Daily Avg"
-              value={summaryData ? `${(summaryData.daily_average_mb / 1024).toFixed(2)} GB` : "0 GB"}
+              value={summary.daily_average_mb >= 1024 
+                ? `${(summary.daily_average_mb / 1024).toFixed(1)} GB`
+                : `${Math.round(summary.daily_average_mb)} MB`}
               subValue="PER DAY"
             />
           </View>
-            {/* Stats Row */}
-            <View style={styles.statsRow}>
-              <StatItem
-                icon="keyboard-double-arrow-up"
-                iconColor="#16a34a"
-                iconBgColor="#dcfce7"
-                label="Total Used"
-                value={summary.total_used_mb >= 1024 
-                  ? `${(summary.total_used_mb / 1024).toFixed(1)} GB`
-                  : `${Math.round(summary.total_used_mb)} MB`}
-                subValue={`OUT OF ${Math.round(summary.total_limit_mb / 1024)} GB`}
-              />
-              <StatItem
-                icon="schedule"
-                iconColor="#1d4ed8"
-                iconBgColor="#dbeafe"
-                label="Predicted"
-                value={prediction.hours_remaining >= 24 
-                  ? `${Math.round(prediction.hours_remaining / 24)} days`
-                  : `${Math.round(prediction.hours_remaining)} hrs`}
-                subValue="LEFT"
-              />
-              <StatItem
-                icon="trending-up"
-                iconColor="#1d4ed8"
-                iconBgColor="#dbeafe"
-                label="Daily Avg"
-                value={summary.daily_average_mb >= 1024 
-                  ? `${(summary.daily_average_mb / 1024).toFixed(1)} GB`
-                  : `${Math.round(summary.daily_average_mb)} MB`}
-                subValue="PER DAY"
-              />
-            </View>
 
           <View
             style={[styles.paceButton, { backgroundColor: paceConfig.buttonColor, shadowColor: paceConfig.buttonColor }]}
@@ -540,25 +506,9 @@ export default function DashboardScreen() {
               <View style={styles.consumptionInfo}>
                 <Text style={styles.consumptionRate}>{summaryData ? Math.round(summaryData.daily_average_mb / 24) : 0}mb</Text>
                 <Text style={styles.consumptionRateLabel}>per hour</Text>
-            <SmallCard title="Consumption:">
-              <View style={styles.consumptionContent}>
-                {/* Simple Bar Chart UI Mockup */}
-                <View style={styles.barsContainer}>
-                  <View style={[styles.bar, { height: currentPace === 'extreme' ? 45 : 20 }]} />
-                  <View style={[styles.bar, { height: currentPace === 'extreme' ? 50 : 35 }]} />
-                  <View style={[styles.bar, { height: currentPace === 'extreme' ? 48 : 25 }]} />
-                  <View style={[styles.bar, { height: currentPace === 'extreme' ? 50 : 50 }]} />
-                  <View style={[styles.bar, { height: currentPace === 'extreme' ? 49 : 30 }]} />
-                </View>
-                <View style={styles.consumptionInfo}>
-                  <Text style={styles.consumptionRate}>
-                    {currentPace === 'extreme' ? '450mb' : currentPace === 'warning' ? '280mb' : '120mb'}
-                  </Text>
-                  <Text style={styles.consumptionRateLabel}>per hour</Text>
-                </View>
               </View>
             </View>
-            <TouchableOpacity style={styles.seeDetailsBtn} onPress={handleHistory} onPress={handleHistory}>
+            <TouchableOpacity style={styles.seeDetailsBtn} onPress={handleHistory}>
               <Text style={styles.seeDetailsText}>SEE DETAILS</Text>
             </TouchableOpacity>
           </SmallCard>
