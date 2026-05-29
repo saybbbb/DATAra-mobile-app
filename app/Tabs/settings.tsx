@@ -614,7 +614,9 @@ export default function SettingsScreen() {
                             <View style={styles.mlMetricsContainer}>
                                 <View style={[styles.mlMetricRow, { borderBottomColor: colors.border }]}>
                                     <Text style={[styles.mlMetricLabel, { color: colors.textMuted }]}>Model Type</Text>
-                                    <Text style={[styles.mlMetricValue, { color: colors.text }]}>Random Forest</Text>
+                                    <Text style={[styles.mlMetricValue, { color: colors.text }]}>
+                                        {mlMetrics.model_type || 'Random Forest'}
+                                    </Text>
                                 </View>
                                 <View style={[styles.mlMetricRow, { borderBottomColor: colors.border }]}>
                                     <Text style={[styles.mlMetricLabel, { color: colors.textMuted }]}>Mean Absolute Error</Text>

@@ -94,7 +94,7 @@ export default function ResetPasswordScreen() {
                         {/* Reset Button → back to login */}
                         <TouchableOpacity
                             style={styles.actionButton}
-                            onPress={() => router.replace("/")}
+                            onPress={() => router.replace("/login")}
                         >
                             <Text style={styles.actionButtonText}>Reset</Text>
                         </TouchableOpacity>

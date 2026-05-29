@@ -71,13 +71,13 @@ export default function RegisterScreen() {
         setPhone(phoneNumber);
         if (Platform.OS === "web") {
           window.alert("Registration successful!");
-          router.replace("/");
+          router.replace("/login");
         } else {
           Alert.alert("Success", "Registration successful!", [
             {
               text: "OK",
               onPress: () => {
-                router.replace("/");
+                router.replace("/login");
               },
             },
           ]);
@@ -87,7 +87,7 @@ export default function RegisterScreen() {
         if (data.username) errorMessage = "Number already exists";
         else if (data.password) errorMessage = data.password[0];
         else if (data.phone_number) errorMessage = data.phone_number[0];
-        
+
         if (Platform.OS === "web") {
           window.alert("Registration Failed: " + errorMessage);
         } else {
@@ -228,8 +228,8 @@ export default function RegisterScreen() {
 
             {/* Actions */}
             <View style={styles.actionContainer}>
-              <TouchableOpacity 
-                style={[styles.loginButton, !termsAccepted && { opacity: 0.5 }]} 
+              <TouchableOpacity
+                style={[styles.loginButton, !termsAccepted && { opacity: 0.5 }]}
                 onPress={handleRegister}
                 disabled={!termsAccepted}
               >
@@ -243,7 +243,7 @@ export default function RegisterScreen() {
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               Already have an account?{" "}
-              <Link href="/" asChild>
+              <Link href="/login" asChild>
                 <Text style={styles.signUpText}>Log In</Text>
               </Link>
             </Text>
@@ -254,66 +254,66 @@ export default function RegisterScreen() {
 
       <Modal visible={showTermsModal} animationType="slide" transparent={false}>
         <SafeAreaView style={styles.modalContainer}>
-           <ScrollView style={styles.modalScroll}>
-              <Text style={styles.modalTitle}>DATAra Terms and Conditions</Text>
-              <Text style={styles.modalDate}>Last Updated: May 06, 2026</Text>
-              
-              <Text style={styles.modalText}>
-                Welcome to DATAra. By accessing or using the DATAra mobile application ("App"), you agree to be bound by these Terms and Conditions. If you do not agree, please do not use the App.{"\n\n"}
-                <Text style={styles.modalSectionTitle}>1. Overview of the Service</Text>{"\n"}
-                DATAra is a mobile application designed to help users monitor and predict mobile data consumption using machine learning. The App analyzes aggregated usage patterns to provide insights and predictions regarding data usage.{"\n\n"}
-                <Text style={styles.modalSectionTitle}>2. Data Collection and Usage</Text>{"\n"}
-                DATAra collects only the following types of data:{"\n"}
-                • Mobile data usage (e.g., total data consumed){"\n"}
-                • Timestamp information (e.g., when data is used){"\n"}
-                • Phone number (for OTP verification){"\n"}
-                DATAra does not collect or monitor specific applications used on your device. All data collected is aggregated and used solely for analysis and prediction purposes.{"\n\n"}
-                <Text style={styles.modalSectionTitle}>3. Machine Learning and Predictions</Text>{"\n"}
-                DATAra uses machine learning models to estimate and predict user data consumption.{"\n"}
-                These models:{"\n"}
-                • Operate primarily on-device{"\n"}
-                • May utilize the user local data to enhance globally trained model for improved accuracy{"\n"}
-                Predictions are estimation only and may not always be accurate. DATAra does not guarantee the correctness of predictions.{"\n\n"}
-                <Text style={styles.modalSectionTitle}>4. User Accounts and Security</Text>{"\n"}
-                Users are required to register using their phone number. This information is used for:{"\n"}
-                • Account verification{"\n"}
-                • Security purposes{"\n"}
-                Users are responsible for maintaining the confidentiality of their account information.{"\n\n"}
-                <Text style={styles.modalSectionTitle}>5. Data Storage and User Control</Text>{"\n"}
-                • User data is primarily stored locally on the device{"\n"}
-                • Users have the right to delete their account and associated data at any time{"\n"}
-                Users has the option to share their data usage with DATAra. The app will always ask for permission before anything is sent. Only usage data is shared—users phone number and name are never included. This is:{"\n"}
-                • Optional{"\n"}
-                • Done only with explicit user consent{"\n\n"}
-                <Text style={styles.modalSectionTitle}>6. Privacy Commitment</Text>{"\n"}
-                DATAra respects user privacy. Specifically:{"\n"}
-                • The App does not track specific app usage{"\n"}
-                • The App does not access personal content or files{"\n"}
-                • Only aggregated data usage is analyzed{"\n\n"}
-                <Text style={styles.modalSectionTitle}>7. Free Service Disclaimer</Text>{"\n"}
-                DATAra is currently provided as a free application for helping User's budget and save their Mobile data. Features and availability may change without notice.{"\n\n"}
-                <Text style={styles.modalSectionTitle}>8. Limitation of Liability</Text>{"\n"}
-                DATAra is provided "as is" without warranties of any kind. The developers are not liable for:{"\n"}
-                • Inaccurate predictions{"\n"}
-                • Data loss{"\n"}
-                • Any damages arising from use of the App{"\n\n"}
-                <Text style={styles.modalSectionTitle}>9. Geographic Use</Text>{"\n"}
-                DATAra is currently intended for users in Cagayan De oro City Phillipines. Usage outside this region may not be fully supported.{"\n\n"}
-                <Text style={styles.modalSectionTitle}>10. Changes to Terms</Text>{"\n"}
-                These Terms and Conditions may be updated at any time with or without notice. Continued use of the App after changes constitutes acceptance of the updated terms.{"\n\n"}
-                <Text style={styles.modalSectionTitle}>11. Contact</Text>{"\n"}
-                For questions or concerns regarding these Terms, please contact the development team.{"\n"}
-                By using DATAra, you acknowledge that you have read and understood these Terms and Conditions.
-              </Text>
-           </ScrollView>
-           <View style={styles.modalFooterRow}>
-             <TouchableOpacity style={styles.modalDeclineButton} onPress={() => { setTermsAccepted(false); setShowTermsModal(false); }}>
-               <Text style={styles.modalButtonText}>Cancel</Text>
-             </TouchableOpacity>
-             <TouchableOpacity style={styles.modalAcceptButton} onPress={() => { setTermsAccepted(true); setShowTermsModal(false); }}>
-               <Text style={styles.modalButtonText}>Accept Terms{"\n"}and Conditions</Text>
-             </TouchableOpacity>
-           </View>
+          <ScrollView style={styles.modalScroll}>
+            <Text style={styles.modalTitle}>DATAra Terms and Conditions</Text>
+            <Text style={styles.modalDate}>Last Updated: May 06, 2026</Text>
+
+            <Text style={styles.modalText}>
+              Welcome to DATAra. By accessing or using the DATAra mobile application ("App"), you agree to be bound by these Terms and Conditions. If you do not agree, please do not use the App.{"\n\n"}
+              <Text style={styles.modalSectionTitle}>1. Overview of the Service</Text>{"\n"}
+              DATAra is a mobile application designed to help users monitor and predict mobile data consumption using machine learning. The App analyzes aggregated usage patterns to provide insights and predictions regarding data usage.{"\n\n"}
+              <Text style={styles.modalSectionTitle}>2. Data Collection and Usage</Text>{"\n"}
+              DATAra collects only the following types of data:{"\n"}
+              • Mobile data usage (e.g., total data consumed){"\n"}
+              • Timestamp information (e.g., when data is used){"\n"}
+              • Phone number (for OTP verification){"\n"}
+              DATAra does not collect or monitor specific applications used on your device. All data collected is aggregated and used solely for analysis and prediction purposes.{"\n\n"}
+              <Text style={styles.modalSectionTitle}>3. Machine Learning and Predictions</Text>{"\n"}
+              DATAra uses machine learning models to estimate and predict user data consumption.{"\n"}
+              These models:{"\n"}
+              • Operate primarily on-device{"\n"}
+              • May utilize the user local data to enhance globally trained model for improved accuracy{"\n"}
+              Predictions are estimation only and may not always be accurate. DATAra does not guarantee the correctness of predictions.{"\n\n"}
+              <Text style={styles.modalSectionTitle}>4. User Accounts and Security</Text>{"\n"}
+              Users are required to register using their phone number. This information is used for:{"\n"}
+              • Account verification{"\n"}
+              • Security purposes{"\n"}
+              Users are responsible for maintaining the confidentiality of their account information.{"\n\n"}
+              <Text style={styles.modalSectionTitle}>5. Data Storage and User Control</Text>{"\n"}
+              • User data is primarily stored locally on the device{"\n"}
+              • Users have the right to delete their account and associated data at any time{"\n"}
+              Users has the option to share their data usage with DATAra. The app will always ask for permission before anything is sent. Only usage data is shared—users phone number and name are never included. This is:{"\n"}
+              • Optional{"\n"}
+              • Done only with explicit user consent{"\n\n"}
+              <Text style={styles.modalSectionTitle}>6. Privacy Commitment</Text>{"\n"}
+              DATAra respects user privacy. Specifically:{"\n"}
+              • The App does not track specific app usage{"\n"}
+              • The App does not access personal content or files{"\n"}
+              • Only aggregated data usage is analyzed{"\n\n"}
+              <Text style={styles.modalSectionTitle}>7. Free Service Disclaimer</Text>{"\n"}
+              DATAra is currently provided as a free application for helping User's budget and save their Mobile data. Features and availability may change without notice.{"\n\n"}
+              <Text style={styles.modalSectionTitle}>8. Limitation of Liability</Text>{"\n"}
+              DATAra is provided "as is" without warranties of any kind. The developers are not liable for:{"\n"}
+              • Inaccurate predictions{"\n"}
+              • Data loss{"\n"}
+              • Any damages arising from use of the App{"\n\n"}
+              <Text style={styles.modalSectionTitle}>9. Geographic Use</Text>{"\n"}
+              DATAra is currently intended for users in Cagayan De oro City Phillipines. Usage outside this region may not be fully supported.{"\n\n"}
+              <Text style={styles.modalSectionTitle}>10. Changes to Terms</Text>{"\n"}
+              These Terms and Conditions may be updated at any time with or without notice. Continued use of the App after changes constitutes acceptance of the updated terms.{"\n\n"}
+              <Text style={styles.modalSectionTitle}>11. Contact</Text>{"\n"}
+              For questions or concerns regarding these Terms, please contact the development team.{"\n"}
+              By using DATAra, you acknowledge that you have read and understood these Terms and Conditions.
+            </Text>
+          </ScrollView>
+          <View style={styles.modalFooterRow}>
+            <TouchableOpacity style={styles.modalDeclineButton} onPress={() => { setTermsAccepted(false); setShowTermsModal(false); }}>
+              <Text style={styles.modalButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.modalAcceptButton} onPress={() => { setTermsAccepted(true); setShowTermsModal(false); }}>
+              <Text style={styles.modalButtonText}>Accept Terms{"\n"}and Conditions</Text>
+            </TouchableOpacity>
+          </View>
         </SafeAreaView>
       </Modal>
 

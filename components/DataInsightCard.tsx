@@ -43,7 +43,7 @@ export function DataInsightCard({ prediction, percentUsed, dailyAvgMb }: DataIns
       return `You're halfway through your data plan at ${percentUsed}% usage. Your current pace of ${Math.round(dailyAvgMb)} MB/day is sustainable. Keep monitoring for any spikes.`;
     }
 
-    return `Your current streaming pattern suggests you'll hit your daily cap by an hour, use only one app at a time to extend data!`;
+    return `🟢 Your data usage is normal and on track. Keep up the good work of monitoring your daily consumption!`;
   };
 
   return (
