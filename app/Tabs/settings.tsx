@@ -14,7 +14,8 @@ import {
     ActivityIndicator,
     Alert,
     Platform,
-    Linking
+    Linking,
+    TextInput
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -32,6 +33,8 @@ export default function SettingsScreen() {
     // Simulator states
     const [isSimModalVisible, setSimModalVisible] = useState(false);
     const [simRemainingMb, setSimRemainingMb] = useState(5000.0);
+    const [simRemainingInput, setSimRemainingInput] = useState('5.0');
+    const [remainingUnit, setRemainingUnit] = useState<'MB' | 'GB'>('GB');
     const [simScreenOnHours, setSimScreenOnHours] = useState(4.0);
     const [simBatteryLevel, setSimBatteryLevel] = useState(80.0);
     const [simPrediction, setSimPrediction] = useState<any>({
@@ -42,6 +45,24 @@ export default function SettingsScreen() {
         hours_to_expiry: 72.0
     });
     const simWsRef = useRef<WebSocket | null>(null);
+
+    // Sync input string with parsed numerical MB state
+    useEffect(() => {
+        const val = parseFloat(simRemainingInput) || 0.0;
+        const mbValue = remainingUnit === 'GB' ? val * 1024 : val;
+        setSimRemainingMb(mbValue);
+    }, [simRemainingInput, remainingUnit]);
+
+    const handleUnitChange = (newUnit: 'MB' | 'GB') => {
+        if (newUnit === remainingUnit) return;
+        setRemainingUnit(newUnit);
+        const currentVal = parseFloat(simRemainingInput) || 0.0;
+        if (newUnit === 'GB') {
+            setSimRemainingInput((currentVal / 1024).toFixed(2));
+        } else {
+            setSimRemainingInput((currentVal * 1024).toFixed(0));
+        }
+    };
 
     const openSimModal = async () => {
         setSimModalVisible(true);
@@ -57,6 +78,13 @@ export default function SettingsScreen() {
                 const data = await res.json();
                 initialRemaining = Math.max(0.0, data.total_limit_mb - data.total_used_mb);
                 setSimRemainingMb(initialRemaining);
+            }
+            if (initialRemaining >= 1024) {
+                setRemainingUnit('GB');
+                setSimRemainingInput((initialRemaining / 1024).toFixed(2));
+            } else {
+                setRemainingUnit('MB');
+                setSimRemainingInput(initialRemaining.toFixed(0));
             }
 
             console.log("Simulator connecting to WebSocket: ", `${WS_URL}/ws/predictions/?token=${storedToken}`);
@@ -829,26 +857,55 @@ export default function SettingsScreen() {
                         </Text>
                         
                         <View style={{ marginBottom: 20 }}>
-                            {/* Control 1: Remaining Data */}
-                            <View style={[styles.controlRow, { borderBottomColor: colors.border }]}>
-                                <View style={{ flex: 1 }}>
+                            {/* Control 1: Remaining Data Input & Unit Toggle */}
+                            <View style={[styles.controlRow, { borderBottomColor: colors.border, flexDirection: 'column', alignItems: 'stretch', gap: 10, paddingVertical: 16 }]}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <Text style={[styles.controlLabel, { color: colors.text }]}>Remaining Data</Text>
-                                    <Text style={styles.controlValue}>{simRemainingMb.toFixed(0)} MB</Text>
+                                    
+                                    {/* Toggle buttons for MB / GB */}
+                                    <View style={{ flexDirection: 'row', backgroundColor: isDarkMode ? '#1e293b' : '#cbd5e1', borderRadius: 8, padding: 2 }}>
+                                        <TouchableOpacity 
+                                            style={{ 
+                                                paddingHorizontal: 12, 
+                                                paddingVertical: 4, 
+                                                borderRadius: 6, 
+                                                backgroundColor: remainingUnit === 'MB' ? '#3b82f6' : 'transparent' 
+                                            }}
+                                            onPress={() => handleUnitChange('MB')}
+                                        >
+                                            <Text style={{ color: remainingUnit === 'MB' ? 'white' : colors.textMuted, fontSize: 11, fontWeight: 'bold' }}>MB</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity 
+                                            style={{ 
+                                                paddingHorizontal: 12, 
+                                                paddingVertical: 4, 
+                                                borderRadius: 6, 
+                                                backgroundColor: remainingUnit === 'GB' ? '#3b82f6' : 'transparent' 
+                                            }}
+                                            onPress={() => handleUnitChange('GB')}
+                                        >
+                                            <Text style={{ color: remainingUnit === 'GB' ? 'white' : colors.textMuted, fontSize: 11, fontWeight: 'bold' }}>GB</Text>
+                                        </TouchableOpacity>
+                                    </View>
                                 </View>
-                                <View style={styles.stepperContainer}>
-                                    <TouchableOpacity 
-                                        style={[styles.stepperButton, { backgroundColor: isDarkMode ? '#334155' : '#cbd5e1' }]} 
-                                        onPress={() => setSimRemainingMb(prev => Math.max(0.0, prev - 500))}
-                                    >
-                                        <Text style={[styles.stepperText, { color: colors.text }]}>-</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity 
-                                        style={[styles.stepperButton, { backgroundColor: isDarkMode ? '#334155' : '#cbd5e1' }]} 
-                                        onPress={() => setSimRemainingMb(prev => prev + 500)}
-                                    >
-                                        <Text style={[styles.stepperText, { color: colors.text }]}>+</Text>
-                                    </TouchableOpacity>
-                                </View>
+                                
+                                {/* TextInput for numerical entry */}
+                                <TextInput
+                                    style={{ 
+                                        backgroundColor: isDarkMode ? '#1e293b' : '#e2e8f0', 
+                                        color: colors.text, 
+                                        height: 48, 
+                                        borderRadius: 12, 
+                                        paddingHorizontal: 16, 
+                                        fontSize: 16,
+                                        fontWeight: '600'
+                                    }}
+                                    keyboardType="numeric"
+                                    value={simRemainingInput}
+                                    onChangeText={setSimRemainingInput}
+                                    placeholder={remainingUnit === 'MB' ? "e.g. 5000" : "e.g. 5.0"}
+                                    placeholderTextColor={colors.textMuted}
+                                />
                             </View>
 
                             {/* Control 2: Screen-on Time */}
