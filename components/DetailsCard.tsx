@@ -44,7 +44,10 @@ export const DetailsCard = ({
             <View style={styles.tabSelector}>
                 {(['HOURS', 'DAYS', 'WEEKS'] as TimeFilter[]).map((filter, i, arr) => (
                     <React.Fragment key={filter}>
-                        <TouchableOpacity onPress={() => onTimeFilterChange(filter)}>
+                        <TouchableOpacity
+                            style={[styles.tabButton, timeFilter === filter && styles.tabButtonActive]}
+                            onPress={() => onTimeFilterChange(filter)}
+                        >
                             <Text style={[styles.tabText, timeFilter === filter && styles.tabTextActive]}>
                                 {filter}
                             </Text>
@@ -111,6 +114,17 @@ const styles = StyleSheet.create({
         color: '#94a3b8',
         fontWeight: '600',
     },
+    tabButton: {
+        paddingVertical: 6,
+        paddingHorizontal: 14,
+        borderRadius: 20,
+        borderWidth: 1.5,
+        borderColor: 'transparent',
+    },
+    tabButtonActive: {
+        borderColor: '#3b00ff',
+        backgroundColor: '#eef2ff',
+    },
     tabTextActive: {
         color: '#3b00ff',
     },
@@ -170,6 +184,6 @@ const styles = StyleSheet.create({
         height: '100%',
         backgroundColor: '#3ea8ff',
         borderRadius: 2,
-        marginLeft: '15%',
+        marginLeft: '0%',
     },
 });

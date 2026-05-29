@@ -1,4 +1,4 @@
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Feather } from '@expo/vector-icons';
 import { router, Stack } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import {
@@ -13,17 +13,21 @@ import {
     ActivityIndicator,
     Modal,
     Platform,
+    Image,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { BottomNavItem } from '../../components/BottomNavItem';
 import { useUser } from '../../context/UserContext';
+import { API_BASE_URL } from '../../constants/Config';
+import { ProfileCard } from '../../components/ProfileCard';
+
+// Default cartoon character matching the user's style
+const DEFAULT_AVATAR_URI = 'https://api.dicebear.com/7.x/adventurer/png?seed=Charlie';
 import { API_URL } from '../../context/ApiConfig';
 
 export default function ProfileScreen() {
     const { phone } = useUser();
-    const [activeTab, setActiveTab] = useState('Profile');
     
     // Auth Token
     const [token, setToken] = useState<string | null>(null);
@@ -31,14 +35,17 @@ export default function ProfileScreen() {
     // Profile State
     const [profile, setProfile] = useState<any>(null);
     const [loadingName, setLoadingName] = useState(false);
+    const [loadingEmail, setLoadingEmail] = useState(false);
     const [loadingAddress, setLoadingAddress] = useState(false);
 
     // Modals visibility
     const [isNameModalVisible, setNameModalVisible] = useState(false);
+    const [isEmailModalVisible, setEmailModalVisible] = useState(false);
     const [isAddressModalVisible, setAddressModalVisible] = useState(false);
 
     // Edit states
     const [editName, setEditName] = useState('');
+    const [editEmail, setEditEmail] = useState('');
 
     // Address Dropdown States
     const [regions, setRegions] = useState<any[]>([]);
@@ -50,11 +57,6 @@ export default function ProfileScreen() {
     const [selectedBarangay, setSelectedBarangay] = useState('');
     const [streetAddress, setStreetAddress] = useState('');
 
-    const handleHistory = () => router.push('/Tabs/history');
-    const handleSettings = () => router.push('/Tabs/settings');
-    const handleHome = () => router.push('/Tabs/dashboard');
-
-
     useEffect(() => {
         const loadTokenAndProfile = async () => {
             const storedToken = await AsyncStorage.getItem('userToken');
@@ -62,6 +64,7 @@ export default function ProfileScreen() {
                 setToken(storedToken);
                 try {
                     const res = await fetch(`${API_URL}/api/profile/`, {
+                    const res = await fetch(`${API_BASE_URL}/api/profile/`, {
                         headers: { 'Authorization': `Token ${storedToken}` }
                     });
                     if (res.ok) {
@@ -75,6 +78,8 @@ export default function ProfileScreen() {
                         
                         if (data.region_code) fetchCities(data.region_code);
                         if (data.city_code) fetchBarangays(data.city_code);
+                        setEditName(data.full_name || '');
+                        setEditEmail(data.email || '');
                     }
                 } catch (e) {
                     console.error("Failed to load profile", e);
@@ -149,6 +154,7 @@ export default function ProfileScreen() {
             }
 
             const response = await fetch(`${API_URL}/api/profile/`, {
+            const response = await fetch(`${API_BASE_URL}/api/profile/`, {
                 method: 'PUT',
                 headers,
                 body: JSON.stringify(payload),
@@ -182,6 +188,18 @@ export default function ProfileScreen() {
         );
     };
 
+    const handleSaveEmail = () => {
+        if (!editEmail.trim()) {
+            alert("Email cannot be empty.");
+            return;
+        }
+        updateBackendProfile(
+            { email: editEmail },
+            setLoadingEmail,
+            () => setEmailModalVisible(false)
+        );
+    };
+
     const handleSaveAddress = () => {
         const regionName = regions.find(r => r.code === selectedRegion)?.name || '';
         const cityName = cities.find(c => c.code === selectedCity)?.name || '';
@@ -204,27 +222,33 @@ export default function ProfileScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor="#0d1320" />
+            <StatusBar barStyle="light-content" backgroundColor="#101622" />
             <Stack.Screen options={{ headerShown: false }} />
 
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                {/* Avatar */}
-                <View style={styles.avatarSection}>
-                    <View style={styles.avatarCircle}>
-                        <View style={styles.avatarInner}>
-                            <MaterialIcons name="person" size={72} color="#94a3b8" />
-                        </View>
+            {/* Header Section (Dark Blue Background) */}
+            <View style={styles.header}>
+                {/* Back button (Top Left) */}
+                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                    <MaterialIcons name="keyboard-arrow-left" size={28} color="white" />
+                </TouchableOpacity>
+
+                {/* Edit icon (Top Right) */}
+                <TouchableOpacity style={styles.editIcon}>
+                    <Feather name="edit" size={20} color="white" />
+                </TouchableOpacity>
+
+                {/* Circular Profile Avatar */}
+                <View style={styles.avatarCircle}>
+                    <View style={styles.avatarPlaceholder}>
+                        <Text style={styles.avatarText}>
+                            {profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : 'U'}
+                        </Text>
                     </View>
                 </View>
 
-                {/* E-SIM Badge */}
-                <View style={styles.esimRow}>
-                    <View style={styles.esimBadge}>
-                        <Text style={styles.esimText}>E-SIM</Text>
-                    </View>
-                    <Text style={styles.phoneNumber}>{profile?.phone_number || phone ? `+${profile?.phone_number || phone}` : '+63 08312035'}</Text>
-                    <MaterialIcons name="keyboard-arrow-down" size={20} color="white" />
-                </View>
+                {/* Subtitle */}
+                <Text style={styles.profilePhotoText}>PROFILE PHOTO</Text>
+            </View>
 
                 {/* Info Boxes */}
                 <View style={styles.infoContainer}>
@@ -242,17 +266,39 @@ export default function ProfileScreen() {
                         <Text style={styles.infoText}>{profile?.provider || 'DESU'}</Text>
                     </View>
                 </View>
+            {/* Content Area (Light Gray Background) */}
+            <ScrollView 
+                style={styles.contentScroll} 
+                contentContainerStyle={styles.contentContainer} 
+                showsVerticalScrollIndicator={false}
+            >
+                {/* Phone Number (Non-clickable) */}
+                <ProfileCard 
+                    label="PHONE NUMBER" 
+                    value={profile?.phone_number || phone || '+6308312035'} 
+                />
+
+                {/* Name (Clickable) */}
+                <ProfileCard 
+                    label="NAME" 
+                    value={profile?.full_name || 'Charlie C. Omongos'} 
+                    onPress={() => setNameModalVisible(true)} 
+                />
+
+                {/* Email (Clickable) */}
+                <ProfileCard 
+                    label="EMAIL" 
+                    value={profile?.email || 'Omongos.charlie@example.com'} 
+                    onPress={() => setEmailModalVisible(true)} 
+                />
+
+                {/* Address (Clickable) */}
+                <ProfileCard 
+                    label="ADDRESS" 
+                    value={profile?.address || 'California Cogon City'} 
+                    onPress={() => setAddressModalVisible(true)} 
+                />
             </ScrollView>
-
-            {/* Bottom Navigation */}
-            <View style={styles.bottomNavContainer}>
-                <View style={styles.bottomNavWrapper}>
-                    <BottomNavItem iconName="home" label="HOME" isActive={activeTab === 'Home'} onPress={handleHome}/>
-                    <BottomNavItem iconName="history" label="HISTORY" isActive={activeTab === 'History'} onPress={handleHistory} />
-                    <BottomNavItem iconName="settings" label="SETTINGS" isActive={activeTab === 'Settings'} onPress={handleSettings} />
-
-                </View>
-            </View>
 
             {/* Name Edit Modal */}
             <Modal visible={isNameModalVisible} transparent={true} animationType="fade">
@@ -272,6 +318,32 @@ export default function ProfileScreen() {
                             </TouchableOpacity>
                             <TouchableOpacity style={[styles.modalButton, styles.saveButton]} onPress={handleSaveName} disabled={loadingName}>
                                 {loadingName ? <ActivityIndicator color="white" /> : <Text style={styles.modalButtonText}>Save</Text>}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Email Edit Modal */}
+            <Modal visible={isEmailModalVisible} transparent={true} animationType="fade">
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Edit Email</Text>
+                        <TextInput
+                            style={styles.modalInput}
+                            value={editEmail}
+                            onChangeText={setEditEmail}
+                            placeholder="Enter your email"
+                            placeholderTextColor="#94a3b8"
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                        />
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => setEmailModalVisible(false)}>
+                                <Text style={styles.modalButtonText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.modalButton, styles.saveButton]} onPress={handleSaveEmail} disabled={loadingEmail}>
+                                {loadingEmail ? <ActivityIndicator color="white" /> : <Text style={styles.modalButtonText}>Save</Text>}
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -343,100 +415,67 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#0d1320', // Matches header background for clean safe area integration
+    },
+    header: {
         backgroundColor: '#0d1320',
-    },
-    scrollContent: {
-        paddingTop: 40,
-        paddingHorizontal: 28,
-        paddingBottom: 110,
+        paddingTop: 50,
+        paddingBottom: 25,
         alignItems: 'center',
+        position: 'relative',
     },
-    avatarSection: {
-        alignItems: 'center',
-        marginBottom: 24,
+    backButton: {
+        position: 'absolute',
+        left: 20,
+        top: 40,
+        padding: 5,
+    },
+    editIcon: {
+        position: 'absolute',
+        right: 20,
+        top: 40,
+        padding: 5,
     },
     avatarCircle: {
-        width: 130,
-        height: 130,
-        borderRadius: 65,
-        backgroundColor: '#dbeafe',
+        width: 140,
+        height: 140,
+        borderRadius: 70,
+        backgroundColor: '#ffffff',
         overflow: 'hidden',
+        marginBottom: 16,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    avatarInner: {
+    avatarPlaceholder: {
+        backgroundColor: '#f8cda5',
         width: '100%',
         height: '100%',
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#e2e8f0',
     },
-    esimRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 32,
-    },
-    esimBadge: {
-        backgroundColor: '#334155',
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 8,
-        marginRight: 8,
-    },
-    esimText: {
-        color: '#94a3b8',
-        fontSize: 12,
+    avatarText: {
+        color: '#d97706',
         fontWeight: 'bold',
+        fontSize: 64,
     },
-    phoneNumber: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: '500',
-        marginRight: 4,
+    profilePhotoText: {
+        color: '#ffffff',
+        fontSize: 14,
+        fontWeight: 'bold',
+        letterSpacing: 1.5,
     },
-    infoContainer: {
-        width: '100%',
-        gap: 12,
-        marginBottom: 40,
+    blueDivider: {
+        height: 4,
+        backgroundColor: '#0084ff',
     },
-    infoBox: {
-        backgroundColor: '#e2e8f0',
-        borderRadius: 12,
-        paddingVertical: 18,
-        paddingHorizontal: 20,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    infoText: {
-        color: '#0f172a',
-        fontSize: 15,
-        fontWeight: '600',
+    contentScroll: {
         flex: 1,
+        backgroundColor: '#dbdbdb',
     },
-    editIcon: {
-        marginLeft: 10,
-    },
-    bottomNavContainer: {
-        position: 'absolute',
-        bottom: 30,
-        left: 20,
-        right: 20,
-        alignItems: 'center',
-    },
-    bottomNavWrapper: {
-        flexDirection: 'row',
-        backgroundColor: 'white',
-        borderRadius: 30,
-        paddingVertical: 12,
+    contentContainer: {
+        paddingTop: 20,
+        paddingBottom: 40,
         paddingHorizontal: 20,
-        justifyContent: 'space-between',
-        width: '100%',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
-        elevation: 10,
     },
     // Modal Styles
     modalOverlay: {

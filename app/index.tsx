@@ -98,6 +98,7 @@ export default function LoginScreen() {
                 style={styles.logoImage}
               />
             </View>
+            <Text style={styles.screenTitle}>LOGIN</Text>
           </View>
 
           {/* Login Form */}
@@ -116,6 +117,7 @@ export default function LoginScreen() {
                   value={phoneNumber}
                   onChangeText={setPhoneNumber}
                   keyboardType="phone-pad"
+                  maxLength={11}
                 />
               </View>
             </View>
@@ -167,20 +169,7 @@ export default function LoginScreen() {
                 <MaterialIcons name="arrow-forward" size={18} color="white" />
               </TouchableOpacity>
 
-              <View style={styles.dividerContainer}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>OR CONTINUE WITH</Text>
-                <View style={styles.dividerLine} />
-              </View>
 
-              <View style={styles.socialGrid}>
-                <TouchableOpacity style={styles.socialButton}>
-                  <FontAwesome name="github" size={20} color="white" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.socialButton}>
-                  <FontAwesome name="envelope" size={20} color="white" />
-                </TouchableOpacity>
-              </View>
             </View>
           </View>
 
@@ -252,6 +241,13 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     backgroundColor: "#135bec",
+  },
+  screenTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "white",
+    marginTop: 40,
+    letterSpacing: 1,
   },
   appName: {
     fontSize: 36,

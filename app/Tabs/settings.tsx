@@ -231,34 +231,37 @@ export default function SettingsScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor="#0d1320" />
+            <StatusBar barStyle="dark-content" backgroundColor="#e2e8f0" />
             <Stack.Screen options={{ headerShown: false }} />
 
             {/* Settings List */}
             <View style={styles.listContainer}>
-                {/* Manage Profile */}
-                <TouchableOpacity style={styles.row} onPress={handleProfile}>
-                    <MaterialIcons name="person-outline" size={28} color="white" style={styles.rowIcon} />
-                    <Text style={styles.rowText}>Manage Profile</Text>
-                </TouchableOpacity>
+                <View style={styles.settingsCard}>
+                    {/* Manage Profile */}
+                    <TouchableOpacity style={styles.row} onPress={handleProfile}>
+                        <MaterialIcons name="person-outline" size={28} color="#334155" style={styles.rowIcon} />
+                        <Text style={styles.rowText}>Manage Profile</Text>
+                        <MaterialIcons name="chevron-right" size={24} color="#94a3b8" />
+                    </TouchableOpacity>
 
-                {/* Password and Security */}
-                <TouchableOpacity style={styles.row}>
-                    <MaterialIcons name="lock-outline" size={28} color="white" style={styles.rowIcon} />
-                    <Text style={styles.rowText}>Password and Security</Text>
-                </TouchableOpacity>
+                    {/* Password and Security */}
+                    <TouchableOpacity style={styles.row}>
+                        <MaterialIcons name="lock-outline" size={28} color="#334155" style={styles.rowIcon} />
+                        <Text style={styles.rowText}>Password and Security</Text>
+                        <MaterialIcons name="chevron-right" size={24} color="#94a3b8" />
+                    </TouchableOpacity>
 
-                {/* Push Notification */}
-                <View style={styles.row}>
-                    <MaterialIcons name="notifications-none" size={28} color="white" style={styles.rowIcon} />
-                    <Text style={[styles.rowText, { flex: 1 }]}>Push Notification</Text>
-                    <Switch
-                        value={pushEnabled}
-                        onValueChange={setPushEnabled}
-                        trackColor={{ false: '#475569', true: '#22c55e' }}
-                        thumbColor="white"
-                    />
-                </View>
+                    {/* Push Notification */}
+                    <View style={styles.row}>
+                        <MaterialIcons name="notifications-none" size={28} color="#334155" style={styles.rowIcon} />
+                        <Text style={[styles.rowText, { flex: 1 }]}>Push Notification</Text>
+                        <Switch
+                            value={pushEnabled}
+                            onValueChange={setPushEnabled}
+                            trackColor={{ false: '#cbd5e1', true: '#22c55e' }}
+                            thumbColor="white"
+                        />
+                    </View>
 
                 {/* ML Model Performance */}
                 <TouchableOpacity style={styles.row} onPress={openMLModal}>
@@ -272,11 +275,13 @@ export default function SettingsScreen() {
                     <Text style={styles.rowText}>Data Sync & Portability</Text>
                 </TouchableOpacity>
 
-                {/* Delete Account */}
-                <TouchableOpacity style={styles.row} onPress={() => setDeleteModalVisible(true)}>
-                    <MaterialIcons name="delete-outline" size={28} color="#f87171" style={styles.rowIcon} />
-                    <Text style={[styles.rowText, { color: '#f87171' }]}>Delete Account</Text>
-                </TouchableOpacity>
+                    {/* Delete Account */}
+                    <TouchableOpacity style={[styles.row, { borderBottomWidth: 0 }]} onPress={() => setDeleteModalVisible(true)}>
+                        <MaterialIcons name="delete-outline" size={28} color="#ef4444" style={styles.rowIcon} />
+                        <Text style={[styles.rowText, { color: '#ef4444' }]}>Delete Account</Text>
+                        <MaterialIcons name="chevron-right" size={24} color="#94a3b8" />
+                    </TouchableOpacity>
+                </View>
 
                 {/* Log Out */}
                 <TouchableOpacity
@@ -471,38 +476,49 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#0d1320',
+        backgroundColor: '#e2e8f0',
     },
     listContainer: {
         flex: 1,
-        paddingTop: 25,
-        paddingHorizontal: 32,
+        paddingTop: 70,
+        paddingHorizontal: 20,
+    },
+    settingsCard: {
+        backgroundColor: 'white',
+        borderRadius: 24,
+        paddingHorizontal: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+        elevation: 8,
     },
     row: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: 22,
         borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: 'rgba(255,255,255,0.08)',
+        borderBottomColor: '#e2e8f0',
     },
     rowIcon: {
         marginRight: 20,
     },
     rowText: {
-        color: 'white',
+        color: '#0f172a',
         fontSize: 16,
         fontWeight: '600',
+        flex: 1,
     },
     logoutButton: {
-        marginTop: 60,
+        marginTop: 32,
         alignSelf: 'center',
-        backgroundColor: '#475569',
+        backgroundColor: '#101622',
         paddingVertical: 14,
         paddingHorizontal: 48,
         borderRadius: 30,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.4,
+        shadowOpacity: 0.2,
         shadowRadius: 8,
         elevation: 6,
     },
