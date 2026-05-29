@@ -8,6 +8,7 @@ import {
   StatusBar,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
   ActivityIndicator,
@@ -15,6 +16,7 @@ import {
 import { API_BASE_URL } from '../../constants/Config';
 
 import { BottomNavItem } from '../../components/BottomNavItem';
+import { DataInsightCard } from '../../components/DataInsightCard';
 import NotificationPanel, { Notification } from '../../components/NotificationPanel';
 import { SmallCard } from '../../components/SmallCard';
 import { StatItem } from '../../components/StatItem';
@@ -29,6 +31,10 @@ export default function DashboardScreen() {
   const [remainingMb, setRemainingMb] = useState(5000.0);
   const [screenOnHours, setScreenOnHours] = useState(4.0);
   const [batteryLevel, setBatteryLevel] = useState(80.0);
+
+  // Data budget
+  const [dataLimit, setDataLimit] = useState('350');
+  const [isTracking, setIsTracking] = useState(false);
 
   useEffect(() => {
       if (!phone) {
@@ -199,28 +205,23 @@ export default function DashboardScreen() {
     ? Math.min(100, Math.round((summary.total_used_mb / summary.total_limit_mb) * 100))
     : 0;
 
-  const togglePace = () => {
-    // This is now bound to the WebSocket, button click sends manual trigger or logs status
-    console.log("Pace details requested. Current mode:", currentPace);
-  };
-
   let paceConfig = {
     text: "USAGE: NORMAL PACE",
     buttonColor: "#16a34a", // Green
-    chartColor: "#2563eb", // Blue
+    progressColor: "#16a34a",
   };
 
   if (percent >= 90) {
     paceConfig = {
       text: "USAGE: EXTREME PACE",
       buttonColor: "#dc2626", // Red
-      chartColor: "#dc2626", // Red
+      progressColor: "#dc2626",
     };
   } else if (percent >= 75) {
     paceConfig = {
       text: "USAGE: WARNING PACE",
       buttonColor: "#ea580c", // Orange
-      chartColor: "#ea580c", // Orange
+      progressColor: "#ea580c",
     };
   }
 
@@ -245,12 +246,12 @@ export default function DashboardScreen() {
   const recentUsage = usageList.slice(0, 5);
   const getBarHeight = (index: number) => {
     if (recentUsage[index]) {
-      // Max height 50, assume 500mb is around max
       return Math.max(10, Math.min(50, (recentUsage[index].data_used_mb / 500) * 50));
     }
     return 10;
   };
-  // Build local / client-generated notifications (backend-ready shape)
+
+  // Build local / client-generated notifications
   const notifications: Notification[] = [];
   if (percent >= 90) {
     notifications.push({ id: 1, title: 'Extreme Usage Alert', message: `You have consumed ${percent}% of your limit. Please slow down.`, created_at: 'Just now', type: 'extreme', is_read: readNotifIds.includes(1) });
@@ -271,69 +272,31 @@ export default function DashboardScreen() {
   const handleSettings = () =>
     router.push('/Tabs/settings')
 
-  const handleSetting = () =>
-    router.push('/Tabs/settings')
-
-
-  const getRingStyles = () => {
-    const unfilledColor = '#e0e7ff';
-    const filledColor = paceConfig.chartColor;
-    if (percent >= 90) {
-      // Extreme pace - mostly full
-      return {
-        borderColor: filledColor,
-      };
-    } else if (percent >= 75) {
-      // Warning pace - 3 quarters full
-      return {
-        borderColor: filledColor,
-        borderRightColor: unfilledColor,
-      };
-    }
-    // Normal pace - half full
-    return {
-      borderColor: filledColor,
-      borderTopColor: unfilledColor,
-      borderRightColor: unfilledColor,
-    };
-  };
-
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#101622" />
+      <StatusBar barStyle="light-content" backgroundColor="#0d1117" />
       <Stack.Screen options={{ headerShown: false }} />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Header Area Background */}
-        <View style={styles.headerBackground}>
-          {/* Top Navigation */}
-          <View style={styles.topNav}>
-            <View style={styles.esimBadge}>
-              <Text style={styles.esimText}>E-SIM</Text>
-              <Text style={styles.phoneNumber}>{phone ? `${phone}` : '63 08312035'}</Text>
-            </View>
-            <View style={styles.profileSection}>
-              <TouchableOpacity onPress={() => setNotifVisible(true)} style={{ position: 'relative' }}>
-                <MaterialIcons name="notifications-none" size={28} color="white" style={{ marginRight: 12 }} />
-                {unreadCount > 0 && (
-                  <View style={styles.badgeContainer}>
-                    <Text style={styles.badgeText}>{unreadCount}</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-              <View style={styles.avatarContainer}>
-                <View style={styles.avatarPlaceholder}>
-                  <Text style={styles.avatarText}>{summaryData?.full_name ? summaryData.full_name.charAt(0).toUpperCase() : 'U'}</Text>
+        {/* Top Navigation Bar */}
+        <View style={styles.topNav}>
+          <View style={styles.esimBadge}>
+            <Text style={styles.esimText}>TM</Text>
+            <Text style={styles.phoneNumber}>{phone ? `+${phone}` : '+6308312035'}</Text>
+          </View>
+          <View style={styles.profileSection}>
+            <TouchableOpacity onPress={() => setNotifVisible(true)} style={{ position: 'relative' }}>
+              <MaterialIcons name="notifications-none" size={28} color="white" style={{ marginRight: 12 }} />
+              {unreadCount > 0 && (
+                <View style={styles.badgeContainer}>
+                  <Text style={styles.badgeText}>{unreadCount}</Text>
                 </View>
+              )}
+            </TouchableOpacity>
+            <View style={styles.avatarContainer}>
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarText}>{summaryData?.full_name ? summaryData.full_name.charAt(0).toUpperCase() : 'U'}</Text>
               </View>
             </View>
-          </View>
-
-          {/* Greeting */}
-          <View style={styles.greetingContainer}>
-            <Text style={styles.greetingText}>
-              Hi <Text style={styles.greetingName}>{summary.full_name || summaryData?.full_name || 'User'}!</Text>
-            </Text>
-            <Text style={styles.subtitleText}>This is your current Usage</Text>
           </View>
         </View>
 
@@ -344,31 +307,20 @@ export default function DashboardScreen() {
             <View style={{ flex: 1 }}>
               <Text style={styles.alertTitle}>DATA DEPLETING FAST</Text>
               <Text style={styles.alertText}>
-                Your data is projected to run out in {prediction.hours_remaining} hrs (around {prediction.depletion_time ? new Date(prediction.depletion_time).toLocaleDateString() : 'soon'}), which is BEFORE your dedicated expiry!
+                Your data is projected to run out in {Math.round(prediction.hours_remaining)} hrs, which is BEFORE your plan expiry!
               </Text>
             </View>
           </View>
         )}
 
-        {/* Main Usage Card */}
+        {/* Main Usage Card — Figma-aligned with progress bar */}
         <View style={styles.mainCard}>
-          {/* Circular Chart Placeholder */}
-          <View style={styles.chartContainer}>
-            <View style={[styles.circleOuter, getRingStyles()]}>
-              <View style={styles.circleInner}>
-                <Text style={styles.circleTextMain}>
-                  {percentUsed}%
-                </Text>
-              </View>
-            </View>
-          </View>
-
           {/* Stats Row */}
           <View style={styles.statsRow}>
             <StatItem
               icon="keyboard-double-arrow-up"
-              iconColor="#16a34a"
-              iconBgColor="#dcfce7"
+              iconColor="white"
+              iconBgColor="#16a34a"
               label="Total Used"
               value={summary.total_used_mb >= 1024 
                 ? `${(summary.total_used_mb / 1024).toFixed(1)} GB`
@@ -377,18 +329,18 @@ export default function DashboardScreen() {
             />
             <StatItem
               icon="schedule"
-              iconColor="#1d4ed8"
-              iconBgColor="#dbeafe"
+              iconColor="white"
+              iconBgColor="#2563eb"
               label="Predicted"
               value={prediction.hours_remaining >= 24 
-                ? `${Math.round(prediction.hours_remaining / 24)} days`
-                : `${Math.round(prediction.hours_remaining)} hrs`}
+                ? `${Math.round(prediction.hours_remaining / 24)}days`
+                : `${Math.round(prediction.hours_remaining)}hrs`}
               subValue="LEFT"
             />
             <StatItem
               icon="trending-up"
-              iconColor="#1d4ed8"
-              iconBgColor="#dbeafe"
+              iconColor="white"
+              iconBgColor="#2563eb"
               label="Daily Avg"
               value={summary.daily_average_mb >= 1024 
                 ? `${(summary.daily_average_mb / 1024).toFixed(1)} GB`
@@ -397,122 +349,151 @@ export default function DashboardScreen() {
             />
           </View>
 
-          <View
-            style={[styles.paceButton, { backgroundColor: paceConfig.buttonColor, shadowColor: paceConfig.buttonColor }]}
-          >
-            <MaterialIcons name="calendar-today" size={20} color="white" />
-            <Text style={styles.paceButtonText}>
-              {paceConfig.text}
-            </Text>
+          {/* Horizontal Progress Bar — Figma-matching */}
+          <View style={styles.progressBarContainer}>
+            <View style={styles.progressBarTrack}>
+              <View style={[styles.progressBarFill, { 
+                width: `${Math.min(percentUsed, 100)}%`, 
+                backgroundColor: paceConfig.progressColor 
+              }]} />
+            </View>
+          </View>
+
+          {/* Consumption Rate */}
+          <Text style={styles.consumptionPercent}>{percentUsed}%</Text>
+          <Text style={styles.consumptionLabel}>Consumption Rate</Text>
+
+          {/* Usage Pace Badge */}
+          <View style={[styles.paceButton, { backgroundColor: paceConfig.buttonColor }]}>
+            <Text style={styles.paceButtonText}>{paceConfig.text}</Text>
           </View>
         </View>
 
-          {/* Interactive Simulation Controls */}
-          <View style={styles.simulationCard}>
-            <Text style={styles.simulationTitle}>Interactive Prediction Simulator</Text>
-            <Text style={styles.simulationSubtitle}>Adjust variables to see real-time dynamic ML projections:</Text>
-            
-            {/* Control 1: Remaining Data */}
-            <View style={styles.controlRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.controlLabel}>Remaining Data</Text>
-                <Text style={styles.controlValue}>{remainingMb.toFixed(0)} MB</Text>
-              </View>
-              <View style={styles.stepperContainer}>
-                <TouchableOpacity 
-                  style={styles.stepperButton} 
-                  onPress={() => setRemainingMb(prev => Math.max(0.0, prev - 500))}
-                >
-                  <Text style={styles.stepperText}>-</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.stepperButton} 
-                  onPress={() => setRemainingMb(prev => Math.min(summary.total_limit_mb, prev + 500))}
-                >
-                  <Text style={styles.stepperText}>+</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Control 2: Screen-on Time */}
-            <View style={styles.controlRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.controlLabel}>Est. Screen On Time</Text>
-                <Text style={styles.controlValue}>{screenOnHours.toFixed(1)} hrs/day</Text>
-              </View>
-              <View style={styles.stepperContainer}>
-                <TouchableOpacity 
-                  style={styles.stepperButton} 
-                  onPress={() => setScreenOnHours(prev => Math.max(0.0, prev - 0.5))}
-                >
-                  <Text style={styles.stepperText}>-</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.stepperButton} 
-                  onPress={() => setScreenOnHours(prev => Math.min(24.0, prev + 0.5))}
-                >
-                  <Text style={styles.stepperText}>+</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Control 3: Battery Level */}
-            <View style={styles.controlRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.controlLabel}>Battery Level</Text>
-                <Text style={styles.controlValue}>{batteryLevel.toFixed(0)}%</Text>
-              </View>
-              <View style={styles.stepperContainer}>
-                <TouchableOpacity 
-                  style={styles.stepperButton} 
-                  onPress={() => setBatteryLevel(prev => Math.max(0.0, prev - 5))}
-                >
-                  <Text style={styles.stepperText}>-</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.stepperButton} 
-                  onPress={() => setBatteryLevel(prev => Math.min(100.0, prev + 5))}
-                >
-                  <Text style={styles.stepperText}>+</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-
-        {/* Bottom Small Cards */}
-        <View style={styles.smallCardsRow}>
-          <SmallCard title="Top Usage:">
-            <View style={styles.topUsageContent}>
-              <View style={[styles.facebookIcon, { backgroundColor: topAppIcon.color }]}>
-                <FontAwesome5 name={topAppIcon.name as any} size={24} color="white" />
-              </View>
-              <View>
-                <Text style={styles.facebookText}>{summaryData?.top_app || "N/A"}</Text>
-                <Text style={styles.facebookSubText}>Total Used</Text>
-                <Text style={styles.facebookSubTextInfo}>{summaryData?.top_app_usage_mb ? `${(summaryData.top_app_usage_mb / 1024).toFixed(2)} GB` : "0 GB"}</Text>
-              </View>
-            </View>
-          </SmallCard>
-
-          <SmallCard title="Consumption:">
-            <View style={styles.consumptionContent}>
-              <View style={styles.barsContainer}>
-                <View style={[styles.bar, { height: getBarHeight(0) }]} />
-                <View style={[styles.bar, { height: getBarHeight(1) }]} />
-                <View style={[styles.bar, { height: getBarHeight(2) }]} />
-                <View style={[styles.bar, { height: getBarHeight(3) }]} />
-                <View style={[styles.bar, { height: getBarHeight(4) }]} />
-              </View>
-              <View style={styles.consumptionInfo}>
-                <Text style={styles.consumptionRate}>{summaryData ? Math.round(summaryData.daily_average_mb / 24) : 0}mb</Text>
-                <Text style={styles.consumptionRateLabel}>per hour</Text>
-              </View>
-            </View>
-            <TouchableOpacity style={styles.seeDetailsBtn} onPress={handleHistory}>
-              <Text style={styles.seeDetailsText}>SEE DETAILS</Text>
+        {/* SET DATA BUDGET Section — Figma-matching */}
+        <View style={styles.budgetCard}>
+          <Text style={styles.budgetTitle}>SET DATA BUDGET</Text>
+          <View style={styles.budgetRow}>
+            <TouchableOpacity 
+              style={[styles.startButton, isTracking && styles.startButtonActive]}
+              onPress={() => setIsTracking(!isTracking)}
+            >
+              <MaterialIcons name="play-arrow" size={28} color="white" />
+              <Text style={styles.startButtonText}>{isTracking ? 'TRACKING' : 'START'}</Text>
             </TouchableOpacity>
-          </SmallCard>
+            <View style={styles.limitBox}>
+              <Text style={styles.limitLabel}>SET LIMIT</Text>
+              <Text style={styles.limitValue}>{dataLimit}mb</Text>
+            </View>
+          </View>
         </View>
+
+        {/* Data Consumption Card — Figma-matching */}
+        <View style={styles.consumptionCard}>
+          <View style={styles.consumptionHeader}>
+            <MaterialIcons name="bar-chart" size={22} color="#3b82f6" />
+            <Text style={styles.consumptionCardTitle}>Data Consumption</Text>
+          </View>
+          <View style={styles.consumptionBody}>
+            <View style={styles.consumptionLeft}>
+              <Text style={styles.consumptionBigNumber}>
+                {summaryData ? Math.round(summaryData.daily_average_mb / 24) : 0}
+                <Text style={styles.consumptionUnit}> MB</Text>
+                <Text style={styles.consumptionPerMin}> /min</Text>
+              </Text>
+              <TouchableOpacity style={styles.seeDetailsBtn} onPress={handleHistory}>
+                <Text style={styles.seeDetailsText}>SEE DETAILS</Text>
+                <MaterialIcons name="arrow-forward" size={14} color="#3b82f6" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.barsContainer}>
+              <View style={[styles.bar, { height: getBarHeight(0) }]} />
+              <View style={[styles.bar, { height: getBarHeight(1) }]} />
+              <View style={[styles.bar, { height: getBarHeight(2) }]} />
+              <View style={[styles.bar, { height: getBarHeight(3) }]} />
+              <View style={[styles.bar, { height: getBarHeight(4) }]} />
+            </View>
+          </View>
+        </View>
+
+        {/* Interactive Simulation Controls */}
+        <View style={styles.simulationCard}>
+          <Text style={styles.simulationTitle}>Interactive Prediction Simulator</Text>
+          <Text style={styles.simulationSubtitle}>Adjust variables to see real-time dynamic ML projections:</Text>
+          
+          {/* Control 1: Remaining Data */}
+          <View style={styles.controlRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.controlLabel}>Remaining Data</Text>
+              <Text style={styles.controlValue}>{remainingMb.toFixed(0)} MB</Text>
+            </View>
+            <View style={styles.stepperContainer}>
+              <TouchableOpacity 
+                style={styles.stepperButton} 
+                onPress={() => setRemainingMb(prev => Math.max(0.0, prev - 500))}
+              >
+                <Text style={styles.stepperText}>-</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.stepperButton} 
+                onPress={() => setRemainingMb(prev => Math.min(summary.total_limit_mb, prev + 500))}
+              >
+                <Text style={styles.stepperText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Control 2: Screen-on Time */}
+          <View style={styles.controlRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.controlLabel}>Est. Screen On Time</Text>
+              <Text style={styles.controlValue}>{screenOnHours.toFixed(1)} hrs/day</Text>
+            </View>
+            <View style={styles.stepperContainer}>
+              <TouchableOpacity 
+                style={styles.stepperButton} 
+                onPress={() => setScreenOnHours(prev => Math.max(0.0, prev - 0.5))}
+              >
+                <Text style={styles.stepperText}>-</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.stepperButton} 
+                onPress={() => setScreenOnHours(prev => Math.min(24.0, prev + 0.5))}
+              >
+                <Text style={styles.stepperText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Control 3: Battery Level */}
+          <View style={styles.controlRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.controlLabel}>Battery Level</Text>
+              <Text style={styles.controlValue}>{batteryLevel.toFixed(0)}%</Text>
+            </View>
+            <View style={styles.stepperContainer}>
+              <TouchableOpacity 
+                style={styles.stepperButton} 
+                onPress={() => setBatteryLevel(prev => Math.max(0.0, prev - 5))}
+              >
+                <Text style={styles.stepperText}>-</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.stepperButton} 
+                onPress={() => setBatteryLevel(prev => Math.min(100.0, prev + 5))}
+              >
+                <Text style={styles.stepperText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
+        {/* Data Insight Card — Dynamic ML-powered */}
+        <DataInsightCard
+          prediction={prediction}
+          percentUsed={percentUsed}
+          dailyAvgMb={summary.daily_average_mb}
+        />
+
       </ScrollView>
 
       {/* Bottom Navigation */}
@@ -555,26 +536,18 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#cbd5e1', // Light slate blue/gray background match
+    backgroundColor: '#0d1117',
   },
-  headerBackground: {
-    backgroundColor: '#101622',
-    paddingTop: 50, // accommodate status bar roughly
+  scrollContent: {
     paddingHorizontal: 20,
-    paddingBottom: 80,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 300,
+    paddingTop: 50,
+    paddingBottom: 100,
   },
   topNav: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 24,
   },
   esimBadge: {
     flexDirection: 'row',
@@ -593,6 +566,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 10,
     marginRight: 8,
+    overflow: 'hidden',
   },
   phoneNumber: {
     color: 'white',
@@ -615,7 +589,7 @@ const styles = StyleSheet.create({
     borderColor: 'white',
   },
   avatarPlaceholder: {
-    backgroundColor: '#f8cda5', // dummy generic skin color tone block
+    backgroundColor: '#f8cda5',
     width: '100%',
     height: '100%',
     justifyContent: 'center',
@@ -626,208 +600,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 18,
   },
-  greetingContainer: {
-    marginTop: 10,
-  },
-  greetingText: {
-    color: 'white',
-    fontSize: 18,
-  },
-  greetingName: {
-    fontWeight: 'bold',
-  },
-  subtitleText: {
-    color: '#cbd5e1',
-    fontSize: 14,
-    marginTop: 4,
-  },
-  scrollContent: {
-    paddingTop: 190, // push down past the static header text to prevent overlap
-    paddingHorizontal: 20,
-    paddingBottom: 100, // accommodate bottom nav
-  },
-  mainCard: {
-    backgroundColor: 'white',
-    borderRadius: 24,
-    padding: 24,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 8,
-    marginBottom: 20,
-  },
-  chartContainer: {
-    marginVertical: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  circleOuter: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    borderWidth: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    transform: [{ rotate: '-45deg' }],
-  },
-  circleInner: {
-    // Un-rotate the text
-    transform: [{ rotate: '45deg' }],
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  circleTextMain: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: '#1e1b4b',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginBottom: 24,
-    paddingHorizontal: 10,
-  },
-
-  paceButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#16a34a', // Green
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    width: '100%',
-    shadowColor: '#16a34a',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-
-  paceButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    marginLeft: 8,
-    fontSize: 14,
-  },
-  smallCardsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-
-  topUsageContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  facebookIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#1877f2', // Facebook blue
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  facebookText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#0f172a',
-  },
-  facebookSubText: {
-    fontSize: 10,
-    color: '#94a3b8',
-    marginTop: 2,
-  },
-  facebookSubTextInfo: {
-    fontSize: 12,
-    color: '#0f172a',
-    fontWeight: '600',
-  },
-  consumptionContent: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-  },
-  barsContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    height: 50,
-    width: '50%',
-    justifyContent: 'space-between',
-  },
-  bar: {
-    width: 6,
-    backgroundColor: '#3b00ff', // main theme blue
-    borderRadius: 3,
-  },
-  consumptionInfo: {
-    alignItems: 'flex-start',
-    width: '45%',
-  },
-  consumptionRate: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#0f172a',
-  },
-  consumptionRateLabel: {
-    fontSize: 10,
-    color: '#0f172a',
-    fontWeight: '500',
-  },
-  seeDetailsBtn: {
-    alignSelf: 'center',
-    marginTop: 16,
-  },
-  seeDetailsText: {
-    fontSize: 10,
-    color: '#3b00ff',
-    fontWeight: 'bold',
-  },
-  bottomNavContainer: {
-    position: 'absolute',
-    bottom: 30,
-    left: 20,
-    right: 20,
-    alignItems: 'center',
-  },
-  bottomNavWrapper: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    borderRadius: 30,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    justifyContent: 'space-between',
-    width: '100%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  badgeContainer: {
-    position: 'absolute',
-    top: -4,
-    right: 8,
-    backgroundColor: '#ef4444',
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#101622',
-  },
-  badgeText: {
-    color: 'white',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },  alertBanner: {
-    backgroundColor: '#dc2626', // Red
+  alertBanner: {
+    backgroundColor: '#dc2626',
     borderRadius: 16,
     padding: 16,
     flexDirection: 'row',
@@ -852,6 +626,190 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 16,
   },
+  // Main Usage Card — dark card matching Figma
+  mainCard: {
+    backgroundColor: '#1a1f2e',
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 8,
+    marginBottom: 16,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 20,
+  },
+  // Horizontal Progress Bar — Figma-matching
+  progressBarContainer: {
+    width: '100%',
+    marginBottom: 12,
+  },
+  progressBarTrack: {
+    height: 14,
+    backgroundColor: '#334155',
+    borderRadius: 7,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 7,
+  },
+  consumptionPercent: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: 'white',
+    marginTop: 8,
+  },
+  consumptionLabel: {
+    fontSize: 14,
+    color: '#94a3b8',
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  paceButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 30,
+    width: '100%',
+  },
+  paceButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 14,
+    letterSpacing: 1,
+  },
+  // SET DATA BUDGET Section
+  budgetCard: {
+    backgroundColor: '#1a1f2e',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
+  },
+  budgetTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: 'white',
+    textAlign: 'center',
+    marginBottom: 16,
+    letterSpacing: 1,
+  },
+  budgetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+  },
+  startButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#16a34a',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    gap: 8,
+  },
+  startButtonActive: {
+    backgroundColor: '#dc2626',
+  },
+  startButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  limitBox: {
+    backgroundColor: '#1e293b',
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  limitLabel: {
+    color: '#94a3b8',
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  limitValue: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 2,
+  },
+  // Data Consumption Card
+  consumptionCard: {
+    backgroundColor: '#1a1f2e',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
+  },
+  consumptionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  consumptionCardTitle: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  consumptionBody: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+  },
+  consumptionLeft: {
+    flex: 1,
+  },
+  consumptionBigNumber: {
+    fontSize: 36,
+    fontWeight: '900',
+    color: 'white',
+  },
+  consumptionUnit: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#94a3b8',
+  },
+  consumptionPerMin: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#64748b',
+  },
+  seeDetailsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 4,
+  },
+  seeDetailsText: {
+    fontSize: 12,
+    color: '#3b82f6',
+    fontWeight: 'bold',
+  },
+  barsContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    height: 60,
+    gap: 6,
+  },
+  bar: {
+    width: 14,
+    backgroundColor: '#3b82f6',
+    borderRadius: 4,
+  },
+  // Simulation Card
   simulationCard: {
     backgroundColor: '#1e293b',
     borderRadius: 24,
@@ -911,5 +869,47 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     lineHeight: 22,
+  },
+  // Bottom Navigation
+  bottomNavContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+    alignItems: 'center',
+  },
+  bottomNavWrapper: {
+    flexDirection: 'row',
+    backgroundColor: '#1a1f2e',
+    borderRadius: 30,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    justifyContent: 'space-between',
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+    borderWidth: 1,
+    borderColor: '#2a2f3e',
+  },
+  badgeContainer: {
+    position: 'absolute',
+    top: -4,
+    right: 8,
+    backgroundColor: '#ef4444',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#0d1117',
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
 });

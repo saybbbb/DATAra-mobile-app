@@ -150,7 +150,7 @@ export default function RegisterScreen() {
             {/* Password Input */}
             <View style={styles.inputGroup}>
               <View style={styles.passwordHeader}>
-                <Text style={styles.label}>Password</Text>
+                <Text style={styles.label}>Create Password</Text>
               </View>
               <View style={styles.inputWrapper}>
                 <View style={styles.inputIconContainer}>
@@ -209,9 +209,11 @@ export default function RegisterScreen() {
 
             {/* Terms and Conditions Checkbox */}
             <View style={styles.termsRow}>
-              <TouchableOpacity onPress={() => setShowTermsModal(true)} style={styles.checkboxArea}>
+              <TouchableOpacity onPress={() => setTermsAccepted(!termsAccepted)} style={styles.checkboxArea}>
                 {termsAccepted ? (
-                  <View style={styles.checkboxChecked} />
+                  <View style={styles.checkboxChecked}>
+                    <MaterialIcons name="check" size={10} color="white" />
+                  </View>
                 ) : (
                   <View style={styles.checkboxUnchecked} />
                 )}
@@ -518,16 +520,18 @@ const styles = StyleSheet.create({
     paddingRight: 10,
   },
   checkboxUnchecked: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: "#cbd5e1",
   },
   checkboxChecked: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: "#16a34a",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   termsText: {
     color: "#94a3b8",

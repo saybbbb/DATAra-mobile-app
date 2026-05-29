@@ -1,8 +1,9 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, Stack } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     SafeAreaView,
+    ScrollView,
     StatusBar,
     StyleSheet,
     Switch,
@@ -19,8 +20,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { BottomNavItem } from '../../components/BottomNavItem';
 import { API_BASE_URL } from '../../constants/Config';
+import { WS_URL } from '../../context/ApiConfig';
+import { useUser } from '../../context/UserContext';
 
 export default function SettingsScreen() {
+    const { phone } = useUser();
+    const [darkMode, setDarkMode] = useState(true);
+    const [strictDataSaver, setStrictDataSaver] = useState(false);
     const [pushEnabled, setPushEnabled] = useState(true);
     const [activeTab, setActiveTab] = useState('Settings');
 
@@ -33,6 +39,12 @@ export default function SettingsScreen() {
     const [mlMetrics, setMLMetrics] = useState<any>(null);
     const [isFetchingML, setIsFetchingML] = useState(false);
     const [mlError, setMLError] = useState<string | null>(null);
+
+    // ML/AI Prediction Report State
+    const [isPredReportVisible, setPredReportVisible] = useState(false);
+    const [predReport, setPredReport] = useState<any>(null);
+    const [isFetchingPred, setIsFetchingPred] = useState(false);
+    const [predError, setPredError] = useState<string | null>(null);
 
     // Data Sync Modal State
     const [isSyncModalVisible, setSyncModalVisible] = useState(false);
@@ -110,7 +122,6 @@ export default function SettingsScreen() {
             });
 
             if (res.ok) {
-                const data = await res.json();
                 setSyncSuccessMessage("Local datasets uploaded to global pool!");
             } else {
                 const errData = await res.json();
@@ -174,10 +185,76 @@ export default function SettingsScreen() {
         handleFetchMLMetrics();
     };
 
-    const handleHistory =()=> router.push('/Tabs/history');
-    const handleHome =()=> router.push('/Tabs/dashboard');
-    const handleSetting =()=> router.replace('/Tabs/settings');
-    const handleProfile =()=> router.push('/Tabs/profile');
+    // Fetch ML/AI Prediction Report (dynamic from prediction endpoint)
+    const handleFetchPredReport = async () => {
+        setIsFetchingPred(true);
+        setPredError(null);
+        try {
+            const storedToken = await AsyncStorage.getItem('userToken');
+            if (!storedToken) {
+                setPredError("Authentication token not found.");
+                return;
+            }
+
+            // Fetch summary for context
+            const summaryRes = await fetch(`${API_BASE_URL}/api/usage/summary/`, {
+                headers: { 'Authorization': `Token ${storedToken}` }
+            });
+
+            // Fetch ML metrics
+            const metricsRes = await fetch(`${API_BASE_URL}/api/ml/metrics/`, {
+                headers: { 'Authorization': `Token ${storedToken}` }
+            });
+
+            let summaryData = null;
+            let metricsData = null;
+
+            if (summaryRes.ok) summaryData = await summaryRes.json();
+            if (metricsRes.ok) metricsData = await metricsRes.json();
+
+            // Build dynamic prediction report
+            const totalUsed = summaryData?.total_used_mb || 0;
+            const totalLimit = summaryData?.total_limit_mb || 14336;
+            const dailyAvg = summaryData?.daily_average_mb || 0;
+            const percentUsed = totalLimit > 0 ? Math.round((totalUsed / totalLimit) * 100) : 0;
+            const daysRemaining = dailyAvg > 0 ? Math.round((totalLimit - totalUsed) / dailyAvg) : 0;
+
+            let usagePace = 'Normal';
+            let paceColor = '#22c55e';
+            if (percentUsed >= 90) { usagePace = 'Extreme'; paceColor = '#ef4444'; }
+            else if (percentUsed >= 75) { usagePace = 'Warning'; paceColor = '#f59e0b'; }
+            else if (percentUsed >= 50) { usagePace = 'Moderate'; paceColor = '#3b82f6'; }
+
+            setPredReport({
+                totalUsed,
+                totalLimit,
+                dailyAvg,
+                percentUsed,
+                daysRemaining,
+                usagePace,
+                paceColor,
+                topApp: summaryData?.top_app || 'Unknown',
+                topAppUsage: summaryData?.top_app_usage_mb || 0,
+                modelAccuracy: metricsData?.r2_score ? `${(metricsData.r2_score * 100).toFixed(1)}%` : 'N/A',
+                mae: metricsData?.mae_mb ? `${metricsData.mae_mb.toFixed(2)} MB` : 'N/A',
+                datasetSize: metricsData?.dataset_size_records || 0,
+            });
+        } catch (e) {
+            setPredError("Failed to generate prediction report.");
+        } finally {
+            setIsFetchingPred(false);
+        }
+    };
+
+    const openPredReport = () => {
+        setPredReportVisible(true);
+        handleFetchPredReport();
+    };
+
+    const handleHistory = () => router.push('/Tabs/history');
+    const handleHome = () => router.push('/Tabs/dashboard');
+    const handleSetting = () => router.replace('/Tabs/settings');
+    const handleProfile = () => router.push('/Tabs/profile');
 
     const handleLogOut = async () => {
         await AsyncStorage.removeItem('userToken');
@@ -231,66 +308,115 @@ export default function SettingsScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="#e2e8f0" />
+            <StatusBar barStyle="light-content" backgroundColor="#0d1117" />
             <Stack.Screen options={{ headerShown: false }} />
 
-            {/* Settings List */}
-            <View style={styles.listContainer}>
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                {/* SETTINGS Title */}
+                <Text style={styles.pageTitle}>SETTINGS</Text>
+
+                {/* DISPLAY AND APPEARANCE Section */}
+                <Text style={styles.sectionHeader}>DISPLAY AND APPEARANCE</Text>
                 <View style={styles.settingsCard}>
-                    {/* Manage Profile */}
-                    <TouchableOpacity style={styles.row} onPress={handleProfile}>
-                        <MaterialIcons name="person-outline" size={28} color="#334155" style={styles.rowIcon} />
-                        <Text style={styles.rowText}>Manage Profile</Text>
-                        <MaterialIcons name="chevron-right" size={24} color="#94a3b8" />
-                    </TouchableOpacity>
-
-                    {/* Password and Security */}
-                    <TouchableOpacity style={styles.row}>
-                        <MaterialIcons name="lock-outline" size={28} color="#334155" style={styles.rowIcon} />
-                        <Text style={styles.rowText}>Password and Security</Text>
-                        <MaterialIcons name="chevron-right" size={24} color="#94a3b8" />
-                    </TouchableOpacity>
-
-                    {/* Push Notification */}
+                    {/* Dark Mode Toggle */}
                     <View style={styles.row}>
-                        <MaterialIcons name="notifications-none" size={28} color="#334155" style={styles.rowIcon} />
-                        <Text style={[styles.rowText, { flex: 1 }]}>Push Notification</Text>
+                        <View style={[styles.rowIconContainer, { backgroundColor: '#312e81' }]}>
+                            <MaterialIcons name="dark-mode" size={22} color="#a78bfa" />
+                        </View>
+                        <Text style={styles.rowText}>Dark Mode</Text>
                         <Switch
-                            value={pushEnabled}
-                            onValueChange={setPushEnabled}
-                            trackColor={{ false: '#cbd5e1', true: '#22c55e' }}
+                            value={darkMode}
+                            onValueChange={setDarkMode}
+                            trackColor={{ false: '#334155', true: '#22c55e' }}
                             thumbColor="white"
                         />
                     </View>
 
-                {/* ML Model Performance */}
-                <TouchableOpacity style={styles.row} onPress={openMLModal}>
-                    <MaterialIcons name="analytics" size={28} color="#3b82f6" style={styles.rowIcon} />
-                    <Text style={styles.rowText}>ML Model Performance</Text>
-                </TouchableOpacity>
+                    {/* Push Notification */}
+                    <View style={styles.row}>
+                        <View style={[styles.rowIconContainer, { backgroundColor: '#1e3a5f' }]}>
+                            <MaterialIcons name="notifications-none" size={22} color="#60a5fa" />
+                        </View>
+                        <Text style={styles.rowText}>Push Notification</Text>
+                        <Switch
+                            value={pushEnabled}
+                            onValueChange={setPushEnabled}
+                            trackColor={{ false: '#334155', true: '#22c55e' }}
+                            thumbColor="white"
+                        />
+                    </View>
 
-                {/* Data Sync & Portability */}
-                <TouchableOpacity style={styles.row} onPress={openSyncModal}>
-                    <MaterialIcons name="sync" size={28} color="#22c55e" style={styles.rowIcon} />
-                    <Text style={styles.rowText}>Data Sync & Portability</Text>
-                </TouchableOpacity>
+                    {/* Strict Data Saver */}
+                    <View style={[styles.row, { borderBottomWidth: 0 }]}>
+                        <View style={[styles.rowIconContainer, { backgroundColor: '#1a3a1a' }]}>
+                            <MaterialIcons name="shield" size={22} color="#4ade80" />
+                        </View>
+                        <Text style={styles.rowText}>Strict Data Saver</Text>
+                        <Switch
+                            value={strictDataSaver}
+                            onValueChange={setStrictDataSaver}
+                            trackColor={{ false: '#334155', true: '#22c55e' }}
+                            thumbColor="white"
+                        />
+                    </View>
+                </View>
+
+                {/* DATA MANAGEMENT Section */}
+                <Text style={styles.sectionHeader}>DATA MANAGEMENT</Text>
+                <View style={styles.settingsCard}>
+                    {/* Manage Profile */}
+                    <TouchableOpacity style={styles.row} onPress={handleProfile}>
+                        <View style={[styles.rowIconContainer, { backgroundColor: '#1e293b' }]}>
+                            <MaterialIcons name="person-outline" size={22} color="#94a3b8" />
+                        </View>
+                        <Text style={styles.rowText}>Manage Profile</Text>
+                        <MaterialIcons name="chevron-right" size={24} color="#64748b" />
+                    </TouchableOpacity>
+
+                    {/* ML Model Performance */}
+                    <TouchableOpacity style={styles.row} onPress={openMLModal}>
+                        <View style={[styles.rowIconContainer, { backgroundColor: '#1e3a5f' }]}>
+                            <MaterialIcons name="analytics" size={22} color="#3b82f6" />
+                        </View>
+                        <Text style={styles.rowText}>ML Model Performance</Text>
+                        <MaterialIcons name="chevron-right" size={24} color="#64748b" />
+                    </TouchableOpacity>
+
+                    {/* ML/AI Prediction Report */}
+                    <TouchableOpacity style={styles.row} onPress={openPredReport}>
+                        <View style={[styles.rowIconContainer, { backgroundColor: '#2e1065' }]}>
+                            <MaterialIcons name="auto-graph" size={22} color="#a78bfa" />
+                        </View>
+                        <Text style={styles.rowText}>AI Prediction Report</Text>
+                        <MaterialIcons name="chevron-right" size={24} color="#64748b" />
+                    </TouchableOpacity>
+
+                    {/* Data Sync & Portability */}
+                    <TouchableOpacity style={styles.row} onPress={openSyncModal}>
+                        <View style={[styles.rowIconContainer, { backgroundColor: '#052e16' }]}>
+                            <MaterialIcons name="sync" size={22} color="#22c55e" />
+                        </View>
+                        <Text style={styles.rowText}>Data Sync & Portability</Text>
+                        <MaterialIcons name="chevron-right" size={24} color="#64748b" />
+                    </TouchableOpacity>
 
                     {/* Delete Account */}
                     <TouchableOpacity style={[styles.row, { borderBottomWidth: 0 }]} onPress={() => setDeleteModalVisible(true)}>
-                        <MaterialIcons name="delete-outline" size={28} color="#ef4444" style={styles.rowIcon} />
+                        <View style={[styles.rowIconContainer, { backgroundColor: '#3b0f0f' }]}>
+                            <MaterialIcons name="delete-outline" size={22} color="#ef4444" />
+                        </View>
                         <Text style={[styles.rowText, { color: '#ef4444' }]}>Delete Account</Text>
-                        <MaterialIcons name="chevron-right" size={24} color="#94a3b8" />
+                        <MaterialIcons name="chevron-right" size={24} color="#64748b" />
                     </TouchableOpacity>
                 </View>
 
-                {/* Log Out */}
-                <TouchableOpacity
-                    style={styles.logoutButton}
-                    onPress={handleLogOut}
-                >
-                    <Text style={styles.logoutText}>Log Out</Text>
+                {/* LOG OUT Button — Red matching Figma */}
+                <TouchableOpacity style={styles.logoutButton} onPress={handleLogOut}>
+                    <MaterialIcons name="logout" size={20} color="white" />
+                    <Text style={styles.logoutText}>LOG OUT</Text>
                 </TouchableOpacity>
-            </View>
+
+            </ScrollView>
 
             {/* Bottom Navigation */}
             <View style={styles.bottomNavContainer}>
@@ -313,7 +439,6 @@ export default function SettingsScreen() {
                         isActive={activeTab === 'Settings'}
                         onPress={handleSetting} 
                     />
-
                 </View>
             </View>
 
@@ -405,6 +530,125 @@ export default function SettingsScreen() {
                 </View>
             </Modal>
 
+            {/* ML/AI Prediction Report Modal */}
+            <Modal visible={isPredReportVisible} transparent={true} animationType="fade">
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <MaterialIcons name="auto-graph" size={48} color="#a78bfa" style={{ alignSelf: 'center', marginBottom: 16 }} />
+                        <Text style={styles.modalTitle}>AI Prediction Report</Text>
+                        
+                        {isFetchingPred ? (
+                            <ActivityIndicator size="large" color="#a78bfa" style={{ marginVertical: 30 }} />
+                        ) : predError ? (
+                            <View>
+                                <Text style={styles.mlErrorText}>{predError}</Text>
+                                <TouchableOpacity style={styles.refreshButton} onPress={handleFetchPredReport}>
+                                    <Text style={styles.refreshButtonText}>Retry</Text>
+                                </TouchableOpacity>
+                            </View>
+                        ) : predReport ? (
+                            <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
+                                {/* Usage Overview */}
+                                <View style={styles.reportSection}>
+                                    <Text style={styles.reportSectionTitle}>Usage Overview</Text>
+                                    <View style={styles.reportProgressContainer}>
+                                        <View style={styles.reportProgressTrack}>
+                                            <View style={[styles.reportProgressFill, { 
+                                                width: `${Math.min(predReport.percentUsed, 100)}%`, 
+                                                backgroundColor: predReport.paceColor 
+                                            }]} />
+                                        </View>
+                                        <Text style={[styles.reportBigText, { color: predReport.paceColor }]}>
+                                            {predReport.percentUsed}%
+                                        </Text>
+                                    </View>
+                                    <View style={styles.mlMetricRow}>
+                                        <Text style={styles.mlMetricLabel}>Total Used</Text>
+                                        <Text style={styles.mlMetricValue}>
+                                            {predReport.totalUsed >= 1024 ? `${(predReport.totalUsed / 1024).toFixed(1)} GB` : `${Math.round(predReport.totalUsed)} MB`}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.mlMetricRow}>
+                                        <Text style={styles.mlMetricLabel}>Total Limit</Text>
+                                        <Text style={styles.mlMetricValue}>{(predReport.totalLimit / 1024).toFixed(1)} GB</Text>
+                                    </View>
+                                    <View style={styles.mlMetricRow}>
+                                        <Text style={styles.mlMetricLabel}>Daily Average</Text>
+                                        <Text style={styles.mlMetricValue}>
+                                            {predReport.dailyAvg >= 1024 ? `${(predReport.dailyAvg / 1024).toFixed(1)} GB` : `${Math.round(predReport.dailyAvg)} MB`}
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                {/* Prediction */}
+                                <View style={styles.reportSection}>
+                                    <Text style={styles.reportSectionTitle}>AI Prediction</Text>
+                                    <View style={styles.mlMetricRow}>
+                                        <Text style={styles.mlMetricLabel}>Usage Pace</Text>
+                                        <Text style={[styles.mlMetricValue, { color: predReport.paceColor }]}>
+                                            {predReport.usagePace}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.mlMetricRow}>
+                                        <Text style={styles.mlMetricLabel}>Days Remaining</Text>
+                                        <Text style={styles.mlMetricValue}>{predReport.daysRemaining} days</Text>
+                                    </View>
+                                    <View style={styles.mlMetricRow}>
+                                        <Text style={styles.mlMetricLabel}>Top App</Text>
+                                        <Text style={styles.mlMetricValue}>{predReport.topApp}</Text>
+                                    </View>
+                                    <View style={styles.mlMetricRow}>
+                                        <Text style={styles.mlMetricLabel}>Top App Usage</Text>
+                                        <Text style={styles.mlMetricValue}>
+                                            {predReport.topAppUsage >= 1024 ? `${(predReport.topAppUsage / 1024).toFixed(2)} GB` : `${Math.round(predReport.topAppUsage)} MB`}
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                {/* Model Info */}
+                                <View style={styles.reportSection}>
+                                    <Text style={styles.reportSectionTitle}>Model Performance</Text>
+                                    <View style={styles.mlMetricRow}>
+                                        <Text style={styles.mlMetricLabel}>Accuracy (R²)</Text>
+                                        <Text style={styles.mlMetricValue}>{predReport.modelAccuracy}</Text>
+                                    </View>
+                                    <View style={styles.mlMetricRow}>
+                                        <Text style={styles.mlMetricLabel}>MAE</Text>
+                                        <Text style={styles.mlMetricValue}>{predReport.mae}</Text>
+                                    </View>
+                                    <View style={styles.mlMetricRow}>
+                                        <Text style={styles.mlMetricLabel}>Dataset Size</Text>
+                                        <Text style={styles.mlMetricValue}>{predReport.datasetSize.toLocaleString()} rows</Text>
+                                    </View>
+                                </View>
+
+                                {/* Dynamic Insight */}
+                                <View style={styles.reportInsight}>
+                                    <MaterialIcons name="lightbulb" size={20} color="#fbbf24" />
+                                    <Text style={styles.reportInsightText}>
+                                        {predReport.percentUsed >= 90
+                                            ? `Critical: At your current rate of ${Math.round(predReport.dailyAvg)} MB/day, you will exhaust your data before the billing cycle ends. Immediately reduce streaming and background data.`
+                                            : predReport.percentUsed >= 75
+                                            ? `Warning: You've used ${predReport.percentUsed}% of your data. Consider switching to Wi-Fi for large downloads and limiting video streaming quality.`
+                                            : predReport.percentUsed >= 50
+                                            ? `On track: You've used ${predReport.percentUsed}% with approximately ${predReport.daysRemaining} days remaining. Your ${predReport.topApp} usage accounts for the most data consumption.`
+                                            : `Healthy usage: You're at ${predReport.percentUsed}% consumption. At ${Math.round(predReport.dailyAvg)} MB/day, your data plan should last well through the billing cycle.`
+                                        }
+                                    </Text>
+                                </View>
+                            </ScrollView>
+                        ) : null}
+
+                        <TouchableOpacity 
+                            style={[styles.mlCloseButton, { backgroundColor: '#7c3aed' }]} 
+                            onPress={() => setPredReportVisible(false)}
+                        >
+                            <Text style={styles.modalButtonText}>Close</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
             {/* Data Sync & Portability Modal */}
             <Modal visible={isSyncModalVisible} transparent={true} animationType="fade">
                 <View style={styles.modalOverlay}>
@@ -476,49 +720,71 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#e2e8f0',
+        backgroundColor: '#0d1117',
     },
-    listContainer: {
-        flex: 1,
-        paddingTop: 70,
+    scrollContent: {
+        paddingTop: 60,
         paddingHorizontal: 20,
+        paddingBottom: 110,
+    },
+    pageTitle: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: 'white',
+        letterSpacing: 1,
+        marginBottom: 24,
+    },
+    sectionHeader: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#64748b',
+        letterSpacing: 1.5,
+        marginBottom: 12,
+        marginTop: 8,
+        marginLeft: 4,
     },
     settingsCard: {
-        backgroundColor: 'white',
-        borderRadius: 24,
-        paddingHorizontal: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
-        elevation: 8,
+        backgroundColor: '#1a1f2e',
+        borderRadius: 20,
+        paddingHorizontal: 16,
+        marginBottom: 20,
     },
     row: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 22,
+        paddingVertical: 16,
         borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: '#e2e8f0',
+        borderBottomColor: 'rgba(255, 255, 255, 0.06)',
     },
-    rowIcon: {
-        marginRight: 20,
+    rowIconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 14,
     },
     rowText: {
-        color: '#0f172a',
-        fontSize: 16,
+        color: 'white',
+        fontSize: 15,
         fontWeight: '600',
         flex: 1,
     },
+    // Red Logout — Figma matching
     logoutButton: {
-        marginTop: 32,
+        flexDirection: 'row',
         alignSelf: 'center',
-        backgroundColor: '#101622',
-        paddingVertical: 14,
+        backgroundColor: '#dc2626',
+        paddingVertical: 16,
         paddingHorizontal: 48,
         borderRadius: 30,
-        shadowColor: '#000',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        marginTop: 16,
+        shadowColor: '#dc2626',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
+        shadowOpacity: 0.3,
         shadowRadius: 8,
         elevation: 6,
     },
@@ -526,17 +792,19 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: 'bold',
         fontSize: 16,
+        letterSpacing: 1,
     },
+    // Bottom Nav
     bottomNavContainer: {
         position: 'absolute',
-        bottom: 30,
+        bottom: 20,
         left: 20,
         right: 20,
         alignItems: 'center',
     },
     bottomNavWrapper: {
         flexDirection: 'row',
-        backgroundColor: 'white',
+        backgroundColor: '#1a1f2e',
         borderRadius: 30,
         paddingVertical: 12,
         paddingHorizontal: 20,
@@ -544,9 +812,11 @@ const styles = StyleSheet.create({
         width: '100%',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.1,
+        shadowOpacity: 0.3,
         shadowRadius: 20,
         elevation: 10,
+        borderWidth: 1,
+        borderColor: '#2a2f3e',
     },
     // Modal Styles
     modalOverlay: {
@@ -556,13 +826,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 20,
         width: '100%',
-        maxWidth: Platform.OS === 'web' ? 480 : '100%',
+        maxWidth: Platform.OS === 'web' ? 480 : '100%' as any,
         alignSelf: 'center',
     },
     modalContent: {
         width: '100%',
         backgroundColor: '#1e293b',
-        borderRadius: 16,
+        borderRadius: 20,
         padding: 24,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
@@ -579,9 +849,9 @@ const styles = StyleSheet.create({
     },
     modalMessage: {
         color: '#cbd5e1',
-        fontSize: 15,
+        fontSize: 14,
         textAlign: 'center',
-        marginBottom: 24,
+        marginBottom: 20,
         lineHeight: 22,
     },
     modalActions: {
@@ -604,7 +874,7 @@ const styles = StyleSheet.create({
     modalButtonText: {
         color: 'white',
         fontWeight: 'bold',
-        fontSize: 16,
+        fontSize: 15,
     },
     mlMetricsContainer: {
         marginTop: 10,
@@ -615,16 +885,16 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingVertical: 10,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.08)',
+        borderBottomColor: 'rgba(255,255,255,0.06)',
     },
     mlMetricLabel: {
         color: '#94a3b8',
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: '500',
     },
     mlMetricValue: {
         color: 'white',
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: 'bold',
     },
     featuresContainer: {
@@ -672,5 +942,53 @@ const styles = StyleSheet.create({
         borderRadius: 30,
         alignItems: 'center',
         marginTop: 10,
+    },
+    // Report styles
+    reportSection: {
+        marginBottom: 16,
+    },
+    reportSectionTitle: {
+        color: '#60a5fa',
+        fontSize: 13,
+        fontWeight: 'bold',
+        letterSpacing: 0.5,
+        marginBottom: 8,
+        textTransform: 'uppercase',
+    },
+    reportProgressContainer: {
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    reportProgressTrack: {
+        height: 10,
+        backgroundColor: '#334155',
+        borderRadius: 5,
+        overflow: 'hidden',
+        width: '100%',
+        marginBottom: 8,
+    },
+    reportProgressFill: {
+        height: '100%',
+        borderRadius: 5,
+    },
+    reportBigText: {
+        fontSize: 28,
+        fontWeight: '900',
+    },
+    reportInsight: {
+        flexDirection: 'row',
+        backgroundColor: 'rgba(251, 191, 36, 0.1)',
+        borderRadius: 12,
+        padding: 12,
+        gap: 8,
+        marginTop: 8,
+        marginBottom: 12,
+        alignItems: 'flex-start',
+    },
+    reportInsightText: {
+        color: '#fde68a',
+        fontSize: 12,
+        lineHeight: 18,
+        flex: 1,
     },
 });

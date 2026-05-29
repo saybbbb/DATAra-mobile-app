@@ -14,6 +14,7 @@ import {
     Modal,
     Platform,
     Image,
+    Alert,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -21,12 +22,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUser } from '../../context/UserContext';
 import { API_BASE_URL } from '../../constants/Config';
 import { ProfileCard } from '../../components/ProfileCard';
+import { BottomNavItem } from '../../components/BottomNavItem';
 
 // Default cartoon character matching the user's style
 const DEFAULT_AVATAR_URI = 'https://api.dicebear.com/7.x/adventurer/png?seed=Charlie';
 
 export default function ProfileScreen() {
     const { phone } = useUser();
+    const [activeTab, setActiveTab] = useState('Settings');
+    const [isDeleteAccountModalVisible, setDeleteAccountModalVisible] = useState(false);
+    const [isDeletingAccount, setIsDeletingAccount] = useState(false);
     
     // Auth Token
     const [token, setToken] = useState<string | null>(null);
@@ -279,6 +284,15 @@ export default function ProfileScreen() {
                     value={profile?.address || 'California Cogon City'} 
                     onPress={() => setAddressModalVisible(true)} 
                 />
+
+                {/* DELETE ACCOUNT Button — Figma */}
+                <TouchableOpacity 
+                    style={styles.deleteAccountButton}
+                    onPress={() => setDeleteAccountModalVisible(true)}
+                >
+                    <MaterialIcons name="delete-outline" size={20} color="white" />
+                    <Text style={styles.deleteAccountText}>DELETE ACCOUNT</Text>
+                </TouchableOpacity>
             </ScrollView>
 
             {/* Name Edit Modal */}
@@ -389,6 +403,78 @@ export default function ProfileScreen() {
                     </View>
                 </View>
             </Modal>
+
+            {/* Delete Account Confirmation Modal */}
+            <Modal visible={isDeleteAccountModalVisible} transparent={true} animationType="fade">
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <MaterialIcons name="warning" size={48} color="#f87171" style={{ alignSelf: 'center', marginBottom: 16 }} />
+                        <Text style={styles.modalTitle}>Delete Account?</Text>
+                        <Text style={styles.deleteModalMessage}>
+                            This action will permanently delete your account and all associated data. This cannot be undone.
+                        </Text>
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => setDeleteAccountModalVisible(false)} disabled={isDeletingAccount}>
+                                <Text style={styles.modalButtonText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity 
+                                style={[styles.modalButton, { backgroundColor: '#dc2626' }]} 
+                                onPress={async () => {
+                                    setIsDeletingAccount(true);
+                                    try {
+                                        const storedToken = await AsyncStorage.getItem('userToken');
+                                        const res = await fetch(`${API_BASE_URL}/api/profile/`, {
+                                            method: 'DELETE',
+                                            headers: { 'Authorization': `Token ${storedToken}` }
+                                        });
+                                        if (res.ok) {
+                                            await AsyncStorage.removeItem('userToken');
+                                            setDeleteAccountModalVisible(false);
+                                            if (Platform.OS === 'web') { window.alert('Account deleted'); router.replace('/'); }
+                                            else Alert.alert('Success', 'Account deleted', [{ text: 'OK', onPress: () => router.replace('/') }]);
+                                        } else {
+                                            if (Platform.OS === 'web') window.alert('Failed to delete account');
+                                            else Alert.alert('Error', 'Failed to delete account');
+                                        }
+                                    } catch (e) {
+                                        if (Platform.OS === 'web') window.alert('Network error');
+                                        else Alert.alert('Error', 'Network error');
+                                    } finally {
+                                        setIsDeletingAccount(false);
+                                    }
+                                }} 
+                                disabled={isDeletingAccount}
+                            >
+                                {isDeletingAccount ? <ActivityIndicator color="white" /> : <Text style={styles.modalButtonText}>Delete</Text>}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Bottom Navigation */}
+            <View style={styles.bottomNavContainer}>
+                <View style={styles.bottomNavWrapper}>
+                    <BottomNavItem
+                        iconName="home"
+                        label="HOME"
+                        isActive={false}
+                        onPress={() => router.push('/Tabs/dashboard')}
+                    />
+                    <BottomNavItem
+                        iconName="history"
+                        label="HISTORY"
+                        isActive={false}
+                        onPress={() => router.push('/Tabs/history')}
+                    />
+                    <BottomNavItem
+                        iconName="settings"
+                        label="SETTINGS"
+                        isActive={true}
+                        onPress={() => router.push('/Tabs/settings')}
+                    />
+                </View>
+            </View>
         </SafeAreaView>
     );
 }
@@ -455,7 +541,7 @@ const styles = StyleSheet.create({
     },
     contentContainer: {
         paddingTop: 20,
-        paddingBottom: 40,
+        paddingBottom: 120,
         paddingHorizontal: 20,
     },
     // Modal Styles
@@ -533,6 +619,59 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         marginBottom: 16,
         overflow: 'hidden',
+    },
+    deleteAccountButton: {
+        flexDirection: 'row',
+        alignSelf: 'center',
+        backgroundColor: '#dc2626',
+        paddingVertical: 16,
+        paddingHorizontal: 32,
+        borderRadius: 30,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        marginTop: 24,
+        shadowColor: '#dc2626',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 6,
+    },
+    deleteAccountText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 14,
+        letterSpacing: 1,
+    },
+    deleteModalMessage: {
+        color: '#cbd5e1',
+        fontSize: 14,
+        textAlign: 'center',
+        marginBottom: 20,
+        lineHeight: 20,
+    },
+    bottomNavContainer: {
+        position: 'absolute',
+        bottom: 20,
+        left: 20,
+        right: 20,
+        alignItems: 'center',
+    },
+    bottomNavWrapper: {
+        flexDirection: 'row',
+        backgroundColor: '#1a1f2e',
+        borderRadius: 30,
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        justifyContent: 'space-between',
+        width: '100%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        elevation: 10,
+        borderWidth: 1,
+        borderColor: '#2a2f3e',
     },
     picker: {
         height: 50,
