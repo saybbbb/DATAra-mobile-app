@@ -55,16 +55,15 @@ export default function RegisterScreen() {
       const data = await response.json();
 
       if (response.ok) {
+        setPhone(phoneNumber);
         if (Platform.OS === "web") {
           window.alert("Registration successful!");
-          setPhone(phoneNumber);
-          window.location.href = "/";
+          router.replace("/");
         } else {
           Alert.alert("Success", "Registration successful!", [
             {
               text: "OK",
               onPress: () => {
-                setPhone(phoneNumber);
                 router.replace("/");
               },
             },
@@ -75,10 +74,19 @@ export default function RegisterScreen() {
         if (data.username) errorMessage = "Number already exists";
         else if (data.password) errorMessage = data.password[0];
         else if (data.phone_number) errorMessage = data.phone_number[0];
-        Alert.alert("Registration Failed", errorMessage);
+        
+        if (Platform.OS === "web") {
+          window.alert("Registration Failed: " + errorMessage);
+        } else {
+          Alert.alert("Registration Failed", errorMessage);
+        }
       }
     } catch (error: any) {
-      Alert.alert("Network Error", "Cannot reach server: " + error.message);
+      if (Platform.OS === "web") {
+        window.alert("Network Error: Cannot reach server: " + error.message);
+      } else {
+        Alert.alert("Network Error", "Cannot reach server: " + error.message);
+      }
     }
   };
 
@@ -213,7 +221,7 @@ export default function RegisterScreen() {
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               Already have an account?{" "}
-              <Link href="../../" asChild>
+              <Link href="/" asChild>
                 <Text style={styles.signUpText}>Log In</Text>
               </Link>
             </Text>

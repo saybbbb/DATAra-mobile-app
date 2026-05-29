@@ -19,6 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { BottomNavItem } from '../../components/BottomNavItem';
 import { useUser } from '../../context/UserContext';
+import { API_URL } from '../../context/ApiConfig';
 
 export default function ProfileScreen() {
     const { phone } = useUser();
@@ -60,7 +61,7 @@ export default function ProfileScreen() {
             if (storedToken) {
                 setToken(storedToken);
                 try {
-                    const res = await fetch('http://127.0.0.1:8000/api/profile/', {
+                    const res = await fetch(`${API_URL}/api/profile/`, {
                         headers: { 'Authorization': `Token ${storedToken}` }
                     });
                     if (res.ok) {
@@ -147,7 +148,7 @@ export default function ProfileScreen() {
                 headers['Authorization'] = `Token ${token}`;
             }
 
-            const response = await fetch('http://127.0.0.1:8000/api/profile/', {
+            const response = await fetch(`${API_URL}/api/profile/`, {
                 method: 'PUT',
                 headers,
                 body: JSON.stringify(payload),
