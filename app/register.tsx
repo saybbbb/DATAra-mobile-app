@@ -14,6 +14,7 @@ import {
   View,
   Alert,
   Platform,
+  Modal,
 } from "react-native";
 import { useUser } from "../context/UserContext";
 import { API_BASE_URL } from "../constants/Config";
@@ -27,10 +28,17 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   const { setPhone } = useUser();
 
   const handleRegister = async () => {
+    if (!termsAccepted) {
+      Alert.alert("Error", "You must agree to the Terms and Conditions to register.");
+      return;
+    }
+
     if (!phoneNumber.trim() || !password.trim() || !confirmPassword.trim()) {
       Alert.alert("Error", "Please fill in all fields.");
       return;
@@ -105,6 +113,7 @@ export default function RegisterScreen() {
                 style={styles.logoImage}
               />
             </View>
+            <Text style={styles.screenTitle}>REGISTER</Text>
           </View>
 
           {/* Register Form */}
@@ -190,27 +199,32 @@ export default function RegisterScreen() {
               </View>
             </View>
 
+            {/* Terms and Conditions Checkbox */}
+            <View style={styles.termsRow}>
+              <TouchableOpacity onPress={() => setShowTermsModal(true)} style={styles.checkboxArea}>
+                {termsAccepted ? (
+                  <View style={styles.checkboxChecked} />
+                ) : (
+                  <View style={styles.checkboxUnchecked} />
+                )}
+              </TouchableOpacity>
+              <Text style={styles.termsText}>
+                Agree to{" "}
+                <Text style={styles.termsLink} onPress={() => setShowTermsModal(true)}>
+                  Terms and Conditions
+                </Text>
+              </Text>
+            </View>
+
             {/* Actions */}
             <View style={styles.actionContainer}>
-              <TouchableOpacity style={styles.loginButton} onPress={handleRegister}>
-                <Text style={styles.loginButtonText}>Sign Up</Text>
-                <MaterialIcons name="arrow-forward" size={18} color="white" />
+              <TouchableOpacity 
+                style={[styles.loginButton, !termsAccepted && { opacity: 0.5 }]} 
+                onPress={handleRegister}
+                disabled={!termsAccepted}
+              >
+                <Text style={styles.loginButtonText}>Register</Text>
               </TouchableOpacity>
-
-              <View style={styles.dividerContainer}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>OR SIGN UP WITH</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              <View style={styles.socialGrid}>
-                <TouchableOpacity style={styles.socialButton}>
-                  <FontAwesome name="github" size={20} color="white" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.socialButton}>
-                  <FontAwesome name="envelope" size={20} color="white" />
-                </TouchableOpacity>
-              </View>
             </View>
 
           </View>
@@ -227,6 +241,72 @@ export default function RegisterScreen() {
 
         </View>
       </ScrollView>
+
+      <Modal visible={showTermsModal} animationType="slide" transparent={false}>
+        <SafeAreaView style={styles.modalContainer}>
+           <ScrollView style={styles.modalScroll}>
+              <Text style={styles.modalTitle}>DATAra Terms and Conditions</Text>
+              <Text style={styles.modalDate}>Last Updated: May 06, 2026</Text>
+              
+              <Text style={styles.modalText}>
+                Welcome to DATAra. By accessing or using the DATAra mobile application ("App"), you agree to be bound by these Terms and Conditions. If you do not agree, please do not use the App.{"\n\n"}
+                <Text style={styles.modalSectionTitle}>1. Overview of the Service</Text>{"\n"}
+                DATAra is a mobile application designed to help users monitor and predict mobile data consumption using machine learning. The App analyzes aggregated usage patterns to provide insights and predictions regarding data usage.{"\n\n"}
+                <Text style={styles.modalSectionTitle}>2. Data Collection and Usage</Text>{"\n"}
+                DATAra collects only the following types of data:{"\n"}
+                • Mobile data usage (e.g., total data consumed){"\n"}
+                • Timestamp information (e.g., when data is used){"\n"}
+                • Phone number (for OTP verification){"\n"}
+                DATAra does not collect or monitor specific applications used on your device. All data collected is aggregated and used solely for analysis and prediction purposes.{"\n\n"}
+                <Text style={styles.modalSectionTitle}>3. Machine Learning and Predictions</Text>{"\n"}
+                DATAra uses machine learning models to estimate and predict user data consumption.{"\n"}
+                These models:{"\n"}
+                • Operate primarily on-device{"\n"}
+                • May utilize the user local data to enhance globally trained model for improved accuracy{"\n"}
+                Predictions are estimation only and may not always be accurate. DATAra does not guarantee the correctness of predictions.{"\n\n"}
+                <Text style={styles.modalSectionTitle}>4. User Accounts and Security</Text>{"\n"}
+                Users are required to register using their phone number. This information is used for:{"\n"}
+                • Account verification{"\n"}
+                • Security purposes{"\n"}
+                Users are responsible for maintaining the confidentiality of their account information.{"\n\n"}
+                <Text style={styles.modalSectionTitle}>5. Data Storage and User Control</Text>{"\n"}
+                • User data is primarily stored locally on the device{"\n"}
+                • Users have the right to delete their account and associated data at any time{"\n"}
+                Users has the option to share their data usage with DATAra. The app will always ask for permission before anything is sent. Only usage data is shared—users phone number and name are never included. This is:{"\n"}
+                • Optional{"\n"}
+                • Done only with explicit user consent{"\n\n"}
+                <Text style={styles.modalSectionTitle}>6. Privacy Commitment</Text>{"\n"}
+                DATAra respects user privacy. Specifically:{"\n"}
+                • The App does not track specific app usage{"\n"}
+                • The App does not access personal content or files{"\n"}
+                • Only aggregated data usage is analyzed{"\n\n"}
+                <Text style={styles.modalSectionTitle}>7. Free Service Disclaimer</Text>{"\n"}
+                DATAra is currently provided as a free application for helping User's budget and save their Mobile data. Features and availability may change without notice.{"\n\n"}
+                <Text style={styles.modalSectionTitle}>8. Limitation of Liability</Text>{"\n"}
+                DATAra is provided "as is" without warranties of any kind. The developers are not liable for:{"\n"}
+                • Inaccurate predictions{"\n"}
+                • Data loss{"\n"}
+                • Any damages arising from use of the App{"\n\n"}
+                <Text style={styles.modalSectionTitle}>9. Geographic Use</Text>{"\n"}
+                DATAra is currently intended for users in Cagayan De oro City Phillipines. Usage outside this region may not be fully supported.{"\n\n"}
+                <Text style={styles.modalSectionTitle}>10. Changes to Terms</Text>{"\n"}
+                These Terms and Conditions may be updated at any time with or without notice. Continued use of the App after changes constitutes acceptance of the updated terms.{"\n\n"}
+                <Text style={styles.modalSectionTitle}>11. Contact</Text>{"\n"}
+                For questions or concerns regarding these Terms, please contact the development team.{"\n"}
+                By using DATAra, you acknowledge that you have read and understood these Terms and Conditions.
+              </Text>
+           </ScrollView>
+           <View style={styles.modalFooterRow}>
+             <TouchableOpacity style={styles.modalDeclineButton} onPress={() => { setTermsAccepted(false); setShowTermsModal(false); }}>
+               <Text style={styles.modalButtonText}>Cancel</Text>
+             </TouchableOpacity>
+             <TouchableOpacity style={styles.modalAcceptButton} onPress={() => { setTermsAccepted(true); setShowTermsModal(false); }}>
+               <Text style={styles.modalButtonText}>Accept Terms{"\n"}and Conditions</Text>
+             </TouchableOpacity>
+           </View>
+        </SafeAreaView>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -283,6 +363,13 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     backgroundColor: "#135bec",
+  },
+  screenTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "white",
+    marginTop: 40,
+    letterSpacing: 1,
   },
   appName: {
     fontSize: 36,
@@ -410,5 +497,97 @@ const styles = StyleSheet.create({
   signUpText: {
     color: "#135bec",
     fontWeight: "600",
+  },
+  termsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    marginTop: 10,
+    marginBottom: 5,
+    marginLeft: 4,
+  },
+  checkboxArea: {
+    paddingRight: 10,
+  },
+  checkboxUnchecked: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: "#cbd5e1",
+  },
+  checkboxChecked: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: "#16a34a",
+  },
+  termsText: {
+    color: "#94a3b8",
+    fontSize: 12,
+  },
+  termsLink: {
+    color: "#94a3b8",
+    textDecorationLine: "underline",
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "white",
+  },
+  modalScroll: {
+    padding: 24,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "black",
+    marginBottom: 4,
+  },
+  modalDate: {
+    fontSize: 12,
+    color: "gray",
+    marginBottom: 16,
+  },
+  modalSectionTitle: {
+    fontWeight: "bold",
+    fontSize: 14,
+    color: "black",
+  },
+  modalText: {
+    fontSize: 12,
+    color: "#333",
+    lineHeight: 18,
+    marginBottom: 40,
+  },
+  modalFooterRow: {
+    flexDirection: "row",
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+    backgroundColor: "white",
+    justifyContent: "space-between",
+  },
+  modalDeclineButton: {
+    backgroundColor: "#ef4444",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    flex: 0.45,
+  },
+  modalAcceptButton: {
+    backgroundColor: "#16a34a",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    flex: 0.5,
+  },
+  modalButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 12,
+    textAlign: "center",
   },
 });
