@@ -1,8 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
-import { router, Stack, useLocalSearchParams } from 'expo-router';
-import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_BASE_URL } from '../../constants/Config';
+import { router, Stack } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import {
     SafeAreaView,
     ScrollView,
@@ -10,13 +9,13 @@ import {
     StyleSheet,
     Text,
     TouchableOpacity,
-    View,
-    Modal,
-    Image,
+    View
 } from 'react-native';
+import { API_BASE_URL } from '../../constants/Config';
 
 import { BottomNavItem } from '../../components/BottomNavItem';
 import { BarEntry, DetailsCard, TimeFilter } from '../../components/DetailsCard';
+import NotificationPanel, { Notification } from '../../components/NotificationPanel';
 import { StatItem } from '../../components/StatItem';
 import { useUser } from '../../context/UserContext';
 
@@ -55,13 +54,13 @@ export default function HistoryScreen() {
         };
     }
 
-    const notifications: { id: number; title: string; message: string; time: string; type: string }[] = [];
+    const notifications: Notification[] = [];
     if (percent >= 90) {
-        notifications.push({ id: 1, title: 'Extreme Usage Alert', message: `You have consumed ${percent}% of your limit. Please slow down.`, time: 'Just now', type: 'extreme' });
+        notifications.push({ id: 1, title: 'Extreme Usage Alert', message: `You have consumed ${percent}% of your limit. Please slow down.`, created_at: 'Just now', type: 'extreme', is_read: readNotifIds.includes(1) });
     } else if (percent >= 75) {
-        notifications.push({ id: 1, title: 'Data Limit Warning', message: `You have consumed ${percent}% of your limit.`, time: 'Just now', type: 'warning' });
+        notifications.push({ id: 1, title: 'Data Limit Warning', message: `You have consumed ${percent}% of your limit.`, created_at: 'Just now', type: 'warning', is_read: readNotifIds.includes(1) });
     }
-    notifications.push({ id: 2, title: 'Welcome to DATAra', message: 'Keep tracking your data efficiently!', time: '1 day ago', type: 'info' });
+    notifications.push({ id: 2, title: 'Welcome to DATAra', message: 'Keep tracking your data efficiently!', created_at: '1 day ago', type: 'info', is_read: readNotifIds.includes(2) });
 
     const handleMarkAllRead = () => {
         setReadNotifIds(notifications.map(n => n.id));
@@ -88,11 +87,11 @@ export default function HistoryScreen() {
         if (filter === 'HOURS') {
             const todayStr = new Date().toISOString().split('T')[0];
             const todayRecords = data.filter(d => d.date === todayStr);
-            
+
             formatted = todayRecords.slice(0, 7).map((item: any) => {
                 const heightVal = Math.min((item.data_used_mb / 200) * 100, 100);
                 return {
-                    label: item.time_slot.split('-')[0], 
+                    label: item.time_slot.split('-')[0],
                     height: heightVal > 10 ? heightVal : 10,
                     value: `${Math.round(item.data_used_mb)}mb`
                 };
@@ -105,7 +104,7 @@ export default function HistoryScreen() {
             const sortedDates = Object.keys(dailyData).sort().reverse().slice(0, 7);
             formatted = sortedDates.map(date => {
                 const total = dailyData[date];
-                const heightVal = Math.min((total / 1000) * 100, 100); 
+                const heightVal = Math.min((total / 1000) * 100, 100);
                 const dateObj = new Date(date);
                 const dayLabel = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
                 return {
@@ -118,19 +117,19 @@ export default function HistoryScreen() {
             const weeklyData: Record<string, number> = {};
             const dates = data.map(d => new Date(d.date).getTime());
             const latest = Math.max(...dates);
-            
+
             data.forEach(item => {
                 const itemTime = new Date(item.date).getTime();
                 const diffDays = Math.floor((latest - itemTime) / (1000 * 60 * 60 * 24));
                 const weekIdx = Math.floor(diffDays / 7);
-                if (weekIdx < 4) { 
+                if (weekIdx < 4) {
                     weeklyData[`Wk ${4 - weekIdx}`] = (weeklyData[`Wk ${4 - weekIdx}`] || 0) + item.data_used_mb;
                 }
             });
-            
+
             formatted = Object.keys(weeklyData).sort().map(weekLabel => {
                 const total = weeklyData[weekLabel];
-                const heightVal = Math.min((total / 5000) * 100, 100); 
+                const heightVal = Math.min((total / 5000) * 100, 100);
                 return {
                     label: weekLabel,
                     height: heightVal > 10 ? heightVal : 10,
@@ -149,9 +148,9 @@ export default function HistoryScreen() {
         try {
             const token = await AsyncStorage.getItem('userToken');
             if (!token) return;
-            
+
             const headers = { 'Authorization': `Token ${token}` };
-            
+
             const summaryRes = await fetch(`${API_BASE_URL}/api/usage/summary/`, { headers });
             if (summaryRes.ok) {
                 setSummaryData(await summaryRes.json());
@@ -166,16 +165,16 @@ export default function HistoryScreen() {
             console.error("Failed to fetch history data:", error);
         }
     };
-    
-    const handleSettings =()=>
-        router.push('/Tabs/settings')
-    
-    const handleHome =()=>
-        router.push('/Tabs/dashboard')
-    
 
-    
-    const handleHistory =()=>
+    const handleSettings = () =>
+        router.push('/Tabs/settings')
+
+    const handleHome = () =>
+        router.push('/Tabs/dashboard')
+
+
+
+    const handleHistory = () =>
         router.replace('/Tabs/history')
 
     const getRingStyles = () => {
@@ -201,40 +200,39 @@ export default function HistoryScreen() {
             <StatusBar barStyle="light-content" backgroundColor="#101622" />
             <Stack.Screen options={{ headerShown: false }} />
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-            {/* Header Area Background */}
-            <View style={styles.headerBackground}>
-                {/* Top Navigation */}
-                <View style={styles.topNav}>
-                    <View style={styles.esimBadge}>
-                        <Text style={styles.esimText}>E-SIM</Text>
-                        <Text style={styles.phoneNumber}>{phone ? `${phone}` : '63 08312035'}</Text>
-                        <MaterialIcons name="keyboard-arrow-down" size={20} color="white" />
-                    </View>
-                    <View style={styles.profileSection}>
-                        <TouchableOpacity onPress={() => setNotifVisible(true)} style={{ position: 'relative' }}>
-                            <MaterialIcons name="notifications-none" size={28} color="white" style={{ marginRight: 12 }} />
-                            {unreadCount > 0 && (
-                                <View style={styles.badgeContainer}>
-                                    <Text style={styles.badgeText}>{unreadCount}</Text>
+                {/* Header Area Background */}
+                <View style={styles.headerBackground}>
+                    {/* Top Navigation */}
+                    <View style={styles.topNav}>
+                        <View style={styles.esimBadge}>
+                            <Text style={styles.esimText}>E-SIM</Text>
+                            <Text style={styles.phoneNumber}>{phone ? `${phone}` : '63 08312035'}</Text>
+                        </View>
+                        <View style={styles.profileSection}>
+                            <TouchableOpacity onPress={() => setNotifVisible(true)} style={{ position: 'relative' }}>
+                                <MaterialIcons name="notifications-none" size={28} color="white" style={{ marginRight: 12 }} />
+                                {unreadCount > 0 && (
+                                    <View style={styles.badgeContainer}>
+                                        <Text style={styles.badgeText}>{unreadCount}</Text>
+                                    </View>
+                                )}
+                            </TouchableOpacity>
+                            <View style={styles.avatarContainer}>
+                                <View style={styles.avatarPlaceholder}>
+                                    <Text style={styles.avatarText}>{summaryData?.full_name ? summaryData.full_name.charAt(0).toUpperCase() : 'U'}</Text>
                                 </View>
-                            )}
-                        </TouchableOpacity>
-                        <View style={styles.avatarContainer}>
-                            <View style={styles.avatarPlaceholder}>
-                                <Text style={styles.avatarText}>{summaryData?.full_name ? summaryData.full_name.charAt(0).toUpperCase() : 'U'}</Text>
                             </View>
                         </View>
                     </View>
-                </View>
 
-                {/* Greeting */}
-                <View style={styles.greetingContainer}>
-                    <Text style={styles.greetingText}>
-                        Hi <Text style={styles.greetingName}>{summaryData?.full_name || 'User'}!</Text>
-                    </Text>
-                    <Text style={styles.subtitleText}>This is your usage history</Text>
+                    {/* Greeting */}
+                    <View style={styles.greetingContainer}>
+                        <Text style={styles.greetingText}>
+                            Hi <Text style={styles.greetingName}>{summaryData?.full_name || 'User'}!</Text>
+                        </Text>
+                        <Text style={styles.subtitleText}>This is your usage history</Text>
+                    </View>
                 </View>
-            </View>
 
                 {/* Main Usage Card - same size as dashboard */}
                 <View style={styles.mainCard}>
@@ -320,47 +318,15 @@ export default function HistoryScreen() {
 
                 </View>
             </View>
-            
-            {/* Notifications Modal */}
-            <Modal visible={isNotifVisible} transparent={true} animationType="fade">
-                <View style={styles.notifOverlay}>
-                <View style={styles.notifContent}>
-                    <View style={styles.notifHeader}>
-                    <View>
-                        <Text style={styles.notifTitle}>Notifications</Text>
-                        {unreadCount > 0 && (
-                            <TouchableOpacity onPress={handleMarkAllRead}>
-                                <Text style={{ color: '#3b82f6', fontSize: 13, marginTop: 4, fontWeight: '600' }}>Mark all as read</Text>
-                            </TouchableOpacity>
-                        )}
-                    </View>
-                    <TouchableOpacity onPress={() => setNotifVisible(false)}>
-                        <MaterialIcons name="close" size={24} color="#94a3b8" />
-                    </TouchableOpacity>
-                    </View>
-                    <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false}>
-                    {notifications.map(n => (
-                        <View key={n.id} style={[styles.notifItem, readNotifIds.includes(n.id) && { opacity: 0.5 }]}>
-                        <MaterialIcons 
-                            name={n.type === 'extreme' ? 'error' : n.type === 'warning' ? 'warning' : 'info'} 
-                            size={28} 
-                            color={n.type === 'extreme' ? '#dc2626' : n.type === 'warning' ? '#ea580c' : '#3b82f6'} 
-                            style={{ marginRight: 14 }} 
-                        />
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.notifItemTitle}>{n.title}</Text>
-                            <Text style={styles.notifItemMsg}>{n.message}</Text>
-                        </View>
-                        <View style={{ alignItems: 'flex-end' }}>
-                            <Text style={styles.notifItemTime}>{n.time}</Text>
-                            {!readNotifIds.includes(n.id) && <View style={styles.unreadDot} />}
-                        </View>
-                        </View>
-                    ))}
-                    </ScrollView>
-                </View>
-                </View>
-            </Modal>
+
+            {/* Notifications Panel – slides in from right */}
+            <NotificationPanel
+                visible={isNotifVisible}
+                onClose={() => setNotifVisible(false)}
+                localNotifications={notifications}
+                readNotifIds={readNotifIds}
+                onMarkAllRead={setReadNotifIds}
+            />
 
         </SafeAreaView>
     );

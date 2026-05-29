@@ -1,8 +1,7 @@
 import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
-import { router, Stack } from 'expo-router';
-import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_BASE_URL } from '../../constants/Config';
+import { router, Stack } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -10,15 +9,15 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
-  Image,
+  View
 } from 'react-native';
+import { API_BASE_URL } from '../../constants/Config';
 
 import { BottomNavItem } from '../../components/BottomNavItem';
+import NotificationPanel, { Notification } from '../../components/NotificationPanel';
 import { SmallCard } from '../../components/SmallCard';
 import { StatItem } from '../../components/StatItem';
 import { useUser } from '../../context/UserContext';
-import NotificationPanel, { Notification } from '../../components/NotificationPanel';
 
 export default function DashboardScreen() {
   const { phone, readNotifIds, setReadNotifIds } = useUser();
@@ -37,14 +36,14 @@ export default function DashboardScreen() {
     try {
       const token = await AsyncStorage.getItem('userToken');
       if (!token) return;
-      
+
       const headers = { 'Authorization': `Token ${token}` };
-      
+
       const sumRes = await fetch(`${API_BASE_URL}/api/usage/summary/`, { headers });
       if (sumRes.ok) {
         setSummaryData(await sumRes.json());
       }
-      
+
       const usageRes = await fetch(`${API_BASE_URL}/api/usage/`, { headers });
       if (usageRes.ok) {
         setUsageList(await usageRes.json());
@@ -123,14 +122,14 @@ export default function DashboardScreen() {
 
   const unreadCount = notifications.filter(n => !readNotifIds.includes(n.id)).length;
 
-  const handleHistory =()=>
+  const handleHistory = () =>
     router.push('/Tabs/history')
-  
-  const handleSettings =()=>
+
+  const handleSettings = () =>
     router.push('/Tabs/settings')
-  
-    const handleSetting =()=>
-        router.push('/Tabs/settings')
+
+  const handleSetting = () =>
+    router.push('/Tabs/settings')
 
 
   const getRingStyles = () => {
@@ -160,127 +159,126 @@ export default function DashboardScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#101622" />
       <Stack.Screen options={{ headerShown: false }} />
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* Header Area Background */}
-          <View style={styles.headerBackground}>
-            {/* Top Navigation */}
-            <View style={styles.topNav}>
-              <View style={styles.esimBadge}>
-                <Text style={styles.esimText}>E-SIM</Text>
-                <Text style={styles.phoneNumber}>{phone ? `${phone}` : '63 08312035'}</Text>
-                <MaterialIcons name="keyboard-arrow-down" size={20} color="white" />
-              </View>
-              <View style={styles.profileSection}>
-                <TouchableOpacity onPress={() => setNotifVisible(true)} style={{ position: 'relative' }}>
-                  <MaterialIcons name="notifications-none" size={28} color="white" style={{ marginRight: 12 }} />
-                  {unreadCount > 0 && (
-                    <View style={styles.badgeContainer}>
-                      <Text style={styles.badgeText}>{unreadCount}</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-                <View style={styles.avatarContainer}>
-                  <View style={styles.avatarPlaceholder}>
-                    <Text style={styles.avatarText}>{summaryData?.full_name ? summaryData.full_name.charAt(0).toUpperCase() : 'U'}</Text>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Header Area Background */}
+        <View style={styles.headerBackground}>
+          {/* Top Navigation */}
+          <View style={styles.topNav}>
+            <View style={styles.esimBadge}>
+              <Text style={styles.esimText}>E-SIM</Text>
+              <Text style={styles.phoneNumber}>{phone ? `${phone}` : '63 08312035'}</Text>
+            </View>
+            <View style={styles.profileSection}>
+              <TouchableOpacity onPress={() => setNotifVisible(true)} style={{ position: 'relative' }}>
+                <MaterialIcons name="notifications-none" size={28} color="white" style={{ marginRight: 12 }} />
+                {unreadCount > 0 && (
+                  <View style={styles.badgeContainer}>
+                    <Text style={styles.badgeText}>{unreadCount}</Text>
                   </View>
-                </View>
-              </View>
-            </View>
-
-            {/* Greeting */}
-            <View style={styles.greetingContainer}>
-              <Text style={styles.greetingText}>
-                Hi <Text style={styles.greetingName}>{summaryData?.full_name || 'User'}!</Text>
-              </Text>
-              <Text style={styles.subtitleText}>This is your current Usage</Text>
-            </View>
-          </View>
-
-          {/* Main Usage Card */}
-          <View style={styles.mainCard}>
-            {/* Circular Chart Placeholder */}
-            <View style={styles.chartContainer}>
-              <View style={[styles.circleOuter, getRingStyles()]}>
-                <View style={styles.circleInner}>
-                  <Text style={styles.circleTextMain}>
-                    {percent}%
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Stats Row */}
-            <View style={styles.statsRow}>
-              <StatItem
-                icon="keyboard-double-arrow-up"
-                iconColor="#16a34a"
-                iconBgColor="#dcfce7"
-                label="Total Used"
-                value={summaryData ? `${(summaryData.total_used_mb / 1024).toFixed(2)} GB` : "0 GB"}
-                subValue={`OUT OF ${summaryData ? Math.round(summaryData.total_limit_mb / 1024) : 0} GB`}
-              />
-              <StatItem
-                icon="schedule"
-                iconColor="#1d4ed8"
-                iconBgColor="#dbeafe"
-                label="Predicted"
-                value="8hrs"
-                subValue="LEFT"
-              />
-              <StatItem
-                icon="trending-up"
-                iconColor="#1d4ed8"
-                iconBgColor="#dbeafe"
-                label="Daily Avg"
-                value={summaryData ? `${(summaryData.daily_average_mb / 1024).toFixed(2)} GB` : "0 GB"}
-                subValue="PER DAY"
-              />
-            </View>
-
-            <View
-              style={[styles.paceButton, { backgroundColor: paceConfig.buttonColor, shadowColor: paceConfig.buttonColor }]}
-            >
-              <MaterialIcons name="calendar-today" size={20} color="white" />
-              <Text style={styles.paceButtonText}>
-                {paceConfig.text}
-              </Text>
-            </View>
-          </View>
-
-          {/* Bottom Small Cards */}
-          <View style={styles.smallCardsRow}>
-            <SmallCard title="Top Usage:">
-              <View style={styles.topUsageContent}>
-                <View style={[styles.facebookIcon, { backgroundColor: topAppIcon.color }]}>
-                  <FontAwesome5 name={topAppIcon.name as any} size={24} color="white" />
-                </View>
-                <View>
-                  <Text style={styles.facebookText}>{summaryData?.top_app || "N/A"}</Text>
-                  <Text style={styles.facebookSubText}>Total Used</Text>
-                  <Text style={styles.facebookSubTextInfo}>{summaryData?.top_app_usage_mb ? `${(summaryData.top_app_usage_mb / 1024).toFixed(2)} GB` : "0 GB"}</Text>
-                </View>
-              </View>
-            </SmallCard>
-
-            <SmallCard title="Consumption:">
-              <View style={styles.consumptionContent}>
-                <View style={styles.barsContainer}>
-                  <View style={[styles.bar, { height: getBarHeight(0) }]} />
-                  <View style={[styles.bar, { height: getBarHeight(1) }]} />
-                  <View style={[styles.bar, { height: getBarHeight(2) }]} />
-                  <View style={[styles.bar, { height: getBarHeight(3) }]} />
-                  <View style={[styles.bar, { height: getBarHeight(4) }]} />
-                </View>
-                <View style={styles.consumptionInfo}>
-                  <Text style={styles.consumptionRate}>{summaryData ? Math.round(summaryData.daily_average_mb / 24) : 0}mb</Text>
-                  <Text style={styles.consumptionRateLabel}>per hour</Text>
-                </View>
-              </View>
-              <TouchableOpacity style={styles.seeDetailsBtn} onPress={handleHistory}>
-                <Text style={styles.seeDetailsText}>SEE DETAILS</Text>
+                )}
               </TouchableOpacity>
-            </SmallCard>
+              <View style={styles.avatarContainer}>
+                <View style={styles.avatarPlaceholder}>
+                  <Text style={styles.avatarText}>{summaryData?.full_name ? summaryData.full_name.charAt(0).toUpperCase() : 'U'}</Text>
+                </View>
+              </View>
+            </View>
           </View>
+
+          {/* Greeting */}
+          <View style={styles.greetingContainer}>
+            <Text style={styles.greetingText}>
+              Hi <Text style={styles.greetingName}>{summaryData?.full_name || 'User'}!</Text>
+            </Text>
+            <Text style={styles.subtitleText}>This is your current Usage</Text>
+          </View>
+        </View>
+
+        {/* Main Usage Card */}
+        <View style={styles.mainCard}>
+          {/* Circular Chart Placeholder */}
+          <View style={styles.chartContainer}>
+            <View style={[styles.circleOuter, getRingStyles()]}>
+              <View style={styles.circleInner}>
+                <Text style={styles.circleTextMain}>
+                  {percent}%
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Stats Row */}
+          <View style={styles.statsRow}>
+            <StatItem
+              icon="keyboard-double-arrow-up"
+              iconColor="#16a34a"
+              iconBgColor="#dcfce7"
+              label="Total Used"
+              value={summaryData ? `${(summaryData.total_used_mb / 1024).toFixed(2)} GB` : "0 GB"}
+              subValue={`OUT OF ${summaryData ? Math.round(summaryData.total_limit_mb / 1024) : 0} GB`}
+            />
+            <StatItem
+              icon="schedule"
+              iconColor="#1d4ed8"
+              iconBgColor="#dbeafe"
+              label="Predicted"
+              value="8hrs"
+              subValue="LEFT"
+            />
+            <StatItem
+              icon="trending-up"
+              iconColor="#1d4ed8"
+              iconBgColor="#dbeafe"
+              label="Daily Avg"
+              value={summaryData ? `${(summaryData.daily_average_mb / 1024).toFixed(2)} GB` : "0 GB"}
+              subValue="PER DAY"
+            />
+          </View>
+
+          <View
+            style={[styles.paceButton, { backgroundColor: paceConfig.buttonColor, shadowColor: paceConfig.buttonColor }]}
+          >
+            <MaterialIcons name="calendar-today" size={20} color="white" />
+            <Text style={styles.paceButtonText}>
+              {paceConfig.text}
+            </Text>
+          </View>
+        </View>
+
+        {/* Bottom Small Cards */}
+        <View style={styles.smallCardsRow}>
+          <SmallCard title="Top Usage:">
+            <View style={styles.topUsageContent}>
+              <View style={[styles.facebookIcon, { backgroundColor: topAppIcon.color }]}>
+                <FontAwesome5 name={topAppIcon.name as any} size={24} color="white" />
+              </View>
+              <View>
+                <Text style={styles.facebookText}>{summaryData?.top_app || "N/A"}</Text>
+                <Text style={styles.facebookSubText}>Total Used</Text>
+                <Text style={styles.facebookSubTextInfo}>{summaryData?.top_app_usage_mb ? `${(summaryData.top_app_usage_mb / 1024).toFixed(2)} GB` : "0 GB"}</Text>
+              </View>
+            </View>
+          </SmallCard>
+
+          <SmallCard title="Consumption:">
+            <View style={styles.consumptionContent}>
+              <View style={styles.barsContainer}>
+                <View style={[styles.bar, { height: getBarHeight(0) }]} />
+                <View style={[styles.bar, { height: getBarHeight(1) }]} />
+                <View style={[styles.bar, { height: getBarHeight(2) }]} />
+                <View style={[styles.bar, { height: getBarHeight(3) }]} />
+                <View style={[styles.bar, { height: getBarHeight(4) }]} />
+              </View>
+              <View style={styles.consumptionInfo}>
+                <Text style={styles.consumptionRate}>{summaryData ? Math.round(summaryData.daily_average_mb / 24) : 0}mb</Text>
+                <Text style={styles.consumptionRateLabel}>per hour</Text>
+              </View>
+            </View>
+            <TouchableOpacity style={styles.seeDetailsBtn} onPress={handleHistory}>
+              <Text style={styles.seeDetailsText}>SEE DETAILS</Text>
+            </TouchableOpacity>
+          </SmallCard>
+        </View>
       </ScrollView>
 
       {/* Bottom Navigation */}
