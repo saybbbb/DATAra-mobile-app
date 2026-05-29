@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "DATAra-mobile-app",
-    "slug": "DATAra-mobile-app",
+    "name": "DATAra",
+    "slug": "DATAra",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -19,7 +19,12 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.PACKAGE_USAGE_STATS",
+        "android.permission.ACCESS_NETWORK_STATE"
+      ],
+      "package": "com.zumaan.DATAramobileapp"
     },
     "web": {
       "output": "static",
@@ -38,11 +43,25 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a0a69323-24e3-44a6-bc0f-8f3093b08145"
+      }
     }
   }
 }
