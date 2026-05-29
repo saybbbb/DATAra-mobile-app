@@ -92,7 +92,7 @@ export default function SettingsScreen() {
             simWsRef.current = ws;
 
             ws.onopen = () => {
-                const expiryTime = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+                const expiryTime = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
                 ws.send(JSON.stringify({
                     remaining_mb: initialRemaining,
                     expiry_time: expiryTime,
@@ -140,7 +140,7 @@ export default function SettingsScreen() {
 
     useEffect(() => {
         if (isSimModalVisible && simWsRef.current && simWsRef.current.readyState === WebSocket.OPEN) {
-            const expiryTime = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+            const expiryTime = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
             simWsRef.current.send(JSON.stringify({
                 remaining_mb: simRemainingMb,
                 expiry_time: expiryTime,
@@ -339,7 +339,7 @@ export default function SettingsScreen() {
             const totalLimit = summaryData?.total_limit_mb || 14336;
             const dailyAvg = summaryData?.daily_average_mb || 0;
             const percentUsed = totalLimit > 0 ? Math.round((totalUsed / totalLimit) * 100) : 0;
-            const daysRemaining = dailyAvg > 0 ? Math.round((totalLimit - totalUsed) / dailyAvg) : 0;
+            const daysRemaining = dailyAvg > 0 ? Math.max(0, Math.round((totalLimit - totalUsed) / dailyAvg)) : 0;
 
             let usagePace = 'Normal';
             let paceColor = '#22c55e';
