@@ -1,50 +1,75 @@
-# Welcome to your Expo app 👋
+# DATAra Mobile Application
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+The premium mobile client for **DATAra** — a data consumption prediction and monitoring application designed in React Native using **Expo** and styled meticulously to match dark Figma mockups.
 
-## Get started
+---
 
-1. Install dependencies
+## 🎨 Design & Theme
+The application incorporates a dark theme matching the Figma UI specifications:
+- **Background**: Deep Navy/Dark Slate (`#0d1117`)
+- **Card Backgrounds**: Sleek Dark Blue (`#1a1f2e` / `#1e293b`)
+- **Primary Colors**: Green (`#16a34a`), Orange (`#ea580c`), Red (`#dc2626`), and Blue (`#3b82f6`) for status-driven indicator bars and alerts.
+- **Typography**: Clean hierarchy with responsive weights and custom layouts for all screens.
 
+---
+
+## 📱 App Screens & Features
+
+1. **Authentication Flow (`/app`)**:
+   - **Login (`index.tsx`)**: Login with credentials and secure storage of session tokens via `AsyncStorage`.
+   - **Register (`register.tsx`)**: Prompts user validation, password creation, and **strict Terms & Conditions acceptance** (enforced via a disabled state until checked).
+   - **Forgot Password / OTP / Reset (`/Auth`)**: Complete, sequential flow for account recovery with clean form layouts.
+
+2. **Dashboard (`/app/Tabs/dashboard.tsx`)**:
+   - Displays real-time cellular data usage progress bars replacing circular charts.
+   - Includes **Interactive Prediction Simulator** controls to dynamically adjust variables (`Remaining Data`, `Screen On Time`, `Battery Level`) to see instant changes.
+   - Incorporates a **DataInsightCard** driven by real-time WebSocket notifications.
+
+3. **History (`/app/Tabs/history.tsx`)**:
+   - Detailed usage metrics logs filtered by time slots.
+   - Integrates the **UsageTable** containing buttons to **Upload to Global** (copies local statistics to server repository) and **Download Local** (exports local datasets as a packaged `.zip` archive).
+
+4. **Settings (`/app/Tabs/settings.tsx`)**:
+   - Controls for Strict Data Saver and Theme toggles.
+   - Hosts the **AI Prediction Report** modal, which fetches live aggregate summary statistics and model metrics (MAE, RMSE, R-squared) from the backend.
+
+5. **Profile (`/app/Tabs/profile.tsx`)**:
+   - Displays user credentials, provider details, and location codes.
+   - Integrates an authenticated **Delete Account** flow (deactivates credentials and anonymizes username).
+
+---
+
+## 🚀 Setup & Development
+
+1. **Install Node Dependencies**:
    ```bash
    npm install
    ```
 
-2. Start the app
+2. **Configure Environment Variables**:
+   Create a `.env` file in the `frontend` root directory:
+   ```env
+   EXPO_PUBLIC_API_URL=http://<your-django-server-ip>:8000
+   EXPO_PUBLIC_WS_URL=ws://<your-django-server-ip>:8000
+   ```
 
+3. **Start Expo Development Server**:
    ```bash
    npx expo start
    ```
+   Press `a` to open in an Android Emulator, `i` for iOS Simulator, or scan the QR code to run on a physical device using **Expo Go**.
 
-In the output, you'll find options to open the app in a
+4. **Production Web Export**:
+   To bundle the app for web deployment:
+   ```bash
+   npx expo export:web
+   ```
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+---
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## 📡 Live Predictions & WebSockets
 
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+The frontend connects dynamically to the Django Channels server.
+- **Connection Hook**: Established on dashboard load via a `WebSocket` instance pointed to the `/ws/predictions/` endpoint.
+- **Dynamic Updates**: Modifying values in the simulator triggers a payload transmission via `ws.send()`. The received forecast instantly re-renders the insight texts without page refresh.
+- **Robust Recovery**: Includes automatic reconnection logic that waits 3 seconds and rebuilds the handshake if the connection drops.

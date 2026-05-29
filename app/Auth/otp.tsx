@@ -42,7 +42,7 @@ export default function OtpScreen() {
                                 style={styles.logoImage}
                             />
                         </View>
-                        <Text style={styles.title}>Account Recovery</Text>
+                        <Text style={styles.title}>ACCOUNT RECOVERY</Text>
                     </View>
 
                     {/* OTP */}
@@ -68,7 +68,6 @@ export default function OtpScreen() {
                             onPress={() => router.push("/Auth/reset-password")}
                         >
                             <Text style={styles.actionButtonText}>Continue</Text>
-                            <MaterialIcons name="arrow-forward" size={18} color="white" />
                         </TouchableOpacity>
                     </View>
 

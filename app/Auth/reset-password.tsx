@@ -33,7 +33,7 @@ export default function ResetPasswordScreen() {
                                 style={styles.logoImage}
                             />
                         </View>
-                        <Text style={styles.title}>Account Recovery</Text>
+                        <Text style={styles.title}>ACCOUNT RECOVERY</Text>
                     </View>
 
                     {/* Form */}
@@ -41,7 +41,7 @@ export default function ResetPasswordScreen() {
 
                         {/* New Password */}
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Create New Password</Text>
+                            <Text style={styles.label}>Reset Password</Text>
                             <View style={styles.inputWrapper}>
                                 <View style={styles.inputIconContainer}>
                                     <MaterialIcons name="lock-outline" size={20} color="#64748b" />
@@ -97,7 +97,6 @@ export default function ResetPasswordScreen() {
                             onPress={() => router.replace("/")}
                         >
                             <Text style={styles.actionButtonText}>Reset</Text>
-                            <MaterialIcons name="arrow-forward" size={18} color="white" />
                         </TouchableOpacity>
 
                     </View>

@@ -1,16 +1,19 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 
-export const SmallCard = ({ title, children }: any) => (
-  <View style={styles.smallCard}>
-    <Text style={styles.smallCardTitle}>{title}</Text>
-    {children}
-  </View>
-);
+export const SmallCard = ({ title, children }: any) => {
+  const { colors } = useTheme();
+  return (
+    <View style={[styles.smallCard, { backgroundColor: colors.card }]}>
+      <Text style={[styles.smallCardTitle, { color: colors.text }]}>{title}</Text>
+      {children}
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   smallCard: {
-    backgroundColor: 'white',
     borderRadius: 20,
     padding: 16,
     width: '48%', // Ensure 2 cards sit next to each other
@@ -23,7 +26,6 @@ const styles = StyleSheet.create({
   smallCardTitle: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#0f172a',
     marginBottom: 12,
   },
 });

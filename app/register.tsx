@@ -68,16 +68,15 @@ export default function RegisterScreen() {
       const data = await response.json();
 
       if (response.ok) {
+        setPhone(phoneNumber);
         if (Platform.OS === "web") {
           window.alert("Registration successful!");
-          setPhone(phoneNumber);
-          window.location.href = "/";
+          router.replace("/");
         } else {
           Alert.alert("Success", "Registration successful!", [
             {
               text: "OK",
               onPress: () => {
-                setPhone(phoneNumber);
                 router.replace("/");
               },
             },
@@ -88,10 +87,19 @@ export default function RegisterScreen() {
         if (data.username) errorMessage = "Number already exists";
         else if (data.password) errorMessage = data.password[0];
         else if (data.phone_number) errorMessage = data.phone_number[0];
-        Alert.alert("Registration Failed", errorMessage);
+        
+        if (Platform.OS === "web") {
+          window.alert("Registration Failed: " + errorMessage);
+        } else {
+          Alert.alert("Registration Failed", errorMessage);
+        }
       }
     } catch (error: any) {
-      Alert.alert("Network Error", "Cannot reach server: " + error.message);
+      if (Platform.OS === "web") {
+        window.alert("Network Error: Cannot reach server: " + error.message);
+      } else {
+        Alert.alert("Network Error", "Cannot reach server: " + error.message);
+      }
     }
   };
 
@@ -142,7 +150,7 @@ export default function RegisterScreen() {
             {/* Password Input */}
             <View style={styles.inputGroup}>
               <View style={styles.passwordHeader}>
-                <Text style={styles.label}>Password</Text>
+                <Text style={styles.label}>Create Password</Text>
               </View>
               <View style={styles.inputWrapper}>
                 <View style={styles.inputIconContainer}>
@@ -201,9 +209,11 @@ export default function RegisterScreen() {
 
             {/* Terms and Conditions Checkbox */}
             <View style={styles.termsRow}>
-              <TouchableOpacity onPress={() => setShowTermsModal(true)} style={styles.checkboxArea}>
+              <TouchableOpacity onPress={() => setTermsAccepted(!termsAccepted)} style={styles.checkboxArea}>
                 {termsAccepted ? (
-                  <View style={styles.checkboxChecked} />
+                  <View style={styles.checkboxChecked}>
+                    <MaterialIcons name="check" size={10} color="white" />
+                  </View>
                 ) : (
                   <View style={styles.checkboxUnchecked} />
                 )}
@@ -233,7 +243,7 @@ export default function RegisterScreen() {
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               Already have an account?{" "}
-              <Link href="../../" asChild>
+              <Link href="/" asChild>
                 <Text style={styles.signUpText}>Log In</Text>
               </Link>
             </Text>
@@ -510,16 +520,18 @@ const styles = StyleSheet.create({
     paddingRight: 10,
   },
   checkboxUnchecked: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: "#cbd5e1",
   },
   checkboxChecked: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: "#16a34a",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   termsText: {
     color: "#94a3b8",

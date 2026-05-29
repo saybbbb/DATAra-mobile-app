@@ -43,13 +43,13 @@ export default function ForgotPasswordScreen() {
                                 style={styles.logoImage}
                             />
                         </View>
-                        <Text style={styles.title}>Account Recovery</Text>
+                        <Text style={styles.title}>ACCOUNT RECOVERY</Text>
                     </View>
 
                     {/* Form */}
                     <View style={styles.formContainer}>
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Enter Account Phone Number</Text>
+                            <Text style={styles.label}>Phone Number</Text>
                             <View style={styles.inputWrapper}>
                                 <View style={styles.inputIconContainer}>
                                     <MaterialIcons name="phone" size={20} color="#64748b" />
@@ -57,7 +57,7 @@ export default function ForgotPasswordScreen() {
                                 {/* Made TextInput a controlled component */}
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="Enter Account Phone Number"
+                                    placeholder="099xxxxx"
                                     placeholderTextColor="#64748b"
                                     keyboardType="phone-pad"
                                     autoCapitalize="none"
@@ -72,8 +72,7 @@ export default function ForgotPasswordScreen() {
                             style={styles.actionButton}
                             onPress={handleSendCode}
                         >
-                            <Text style={styles.actionButtonText}>Send Code</Text>
-                            <MaterialIcons name="arrow-forward" size={18} color="white" />
+                            <Text style={styles.actionButtonText}>Continue</Text>
                         </TouchableOpacity>
                     </View>
 

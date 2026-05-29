@@ -1,6 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 
 interface ProfileCardProps {
     label: string;
@@ -11,19 +12,20 @@ interface ProfileCardProps {
 export const ProfileCard = ({ label, value, onPress }: ProfileCardProps) => {
     const isEditable = !!onPress;
     const CardContainer = isEditable ? TouchableOpacity : View;
+    const { colors } = useTheme();
 
     return (
         <CardContainer 
-            style={styles.card} 
+            style={[styles.card, { backgroundColor: colors.card }]} 
             onPress={onPress} 
             activeOpacity={isEditable ? 0.6 : 1}
         >
             <View style={styles.cardTextContainer}>
-                <Text style={styles.cardLabel}>{label}</Text>
-                <Text style={styles.cardValue}>{value}</Text>
+                <Text style={[styles.cardLabel, { color: colors.text }]}>{label}</Text>
+                <Text style={[styles.cardValue, { color: colors.textMuted }]}>{value}</Text>
             </View>
             {isEditable && (
-                <MaterialIcons name="keyboard-arrow-right" size={32} color="black" />
+                <MaterialIcons name="keyboard-arrow-right" size={32} color={colors.textMuted} />
             )}
         </CardContainer>
     );
@@ -31,7 +33,6 @@ export const ProfileCard = ({ label, value, onPress }: ProfileCardProps) => {
 
 const styles = StyleSheet.create({
     card: {
-        backgroundColor: '#ffffff',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -46,11 +47,9 @@ const styles = StyleSheet.create({
     cardLabel: {
         fontSize: 14,
         fontWeight: 'bold',
-        color: '#000000',
         marginBottom: 8,
     },
     cardValue: {
         fontSize: 14,
-        color: '#4b5563',
     },
 });

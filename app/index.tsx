@@ -177,7 +177,7 @@ export default function LoginScreen() {
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               Don't have an account? {" "}
-              <Link href="../register" asChild>
+              <Link href="/register" asChild>
                 <Text style={styles.signUpText}>Sign Up</Text>
               </Link>
             </Text>

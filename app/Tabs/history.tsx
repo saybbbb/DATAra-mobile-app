@@ -9,49 +9,36 @@ import {
     StyleSheet,
     Text,
     TouchableOpacity,
-    View
+    View,
+    Linking,
+    ActivityIndicator,
+    Alert,
+    Platform,
 } from 'react-native';
 import { API_BASE_URL } from '../../constants/Config';
 
 import { BottomNavItem } from '../../components/BottomNavItem';
-import { BarEntry, DetailsCard, TimeFilter } from '../../components/DetailsCard';
+import { BarEntry, TimeFilter } from '../../components/DetailsCard';
 import NotificationPanel, { Notification } from '../../components/NotificationPanel';
-import { StatItem } from '../../components/StatItem';
+import { UsageTable } from '../../components/UsageTable';
 import { useUser } from '../../context/UserContext';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function HistoryScreen() {
     const { phone, readNotifIds, setReadNotifIds } = useUser();
+    const { isDarkMode, colors } = useTheme();
     const [activeTab, setActiveTab] = useState('History');
     const [timeFilter, setTimeFilter] = useState<TimeFilter>('HOURS');
     const [summaryData, setSummaryData] = useState<any>(null);
     const [barData, setBarData] = useState<BarEntry[]>([]);
     const [allUsage, setAllUsage] = useState<any[]>([]);
     const [isNotifVisible, setNotifVisible] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
 
     // Stats
     let percent = 0;
     if (summaryData && summaryData.total_limit_mb > 0) {
         percent = Math.round((summaryData.total_used_mb / summaryData.total_limit_mb) * 100);
-    }
-
-    let paceConfig = {
-        text: "USAGE: NORMAL PACE",
-        buttonColor: "#16a34a", // Green
-        chartColor: "#2563eb", // Blue
-    };
-
-    if (percent >= 90) {
-        paceConfig = {
-            text: "USAGE: EXTREME PACE",
-            buttonColor: "#dc2626", // Red
-            chartColor: "#dc2626", // Red
-        };
-    } else if (percent >= 75) {
-        paceConfig = {
-            text: "USAGE: WARNING PACE",
-            buttonColor: "#ea580c", // Orange
-            chartColor: "#ea580c", // Orange
-        };
     }
 
     const notifications: Notification[] = [];
@@ -61,10 +48,6 @@ export default function HistoryScreen() {
         notifications.push({ id: 1, title: 'Data Limit Warning', message: `You have consumed ${percent}% of your limit.`, created_at: 'Just now', type: 'warning', is_read: readNotifIds.includes(1) });
     }
     notifications.push({ id: 2, title: 'Welcome to DATAra', message: 'Keep tracking your data efficiently!', created_at: '1 day ago', type: 'info', is_read: readNotifIds.includes(2) });
-
-    const handleMarkAllRead = () => {
-        setReadNotifIds(notifications.map(n => n.id));
-    };
 
     const unreadCount = notifications.filter(n => !readNotifIds.includes(n.id)).length;
 
@@ -166,137 +149,235 @@ export default function HistoryScreen() {
         }
     };
 
-    const handleSettings = () =>
-        router.push('/Tabs/settings')
+    // Upload CSV to global pool (connected to sync endpoint)
+    const handleUploadCSV = async () => {
+        setIsUploading(true);
+        try {
+            const storedToken = await AsyncStorage.getItem('userToken');
+            if (!storedToken) return;
 
-    const handleHome = () =>
-        router.push('/Tabs/dashboard')
+            const res = await fetch(`${API_BASE_URL}/api/sync/upload-global/`, {
+                method: 'POST',
+                headers: { 'Authorization': `Token ${storedToken}` }
+            });
 
-
-
-    const handleHistory = () =>
-        router.replace('/Tabs/history')
-
-    const getRingStyles = () => {
-        const unfilledColor = '#e0e7ff';
-        const filledColor = paceConfig.chartColor;
-        if (percent >= 90) {
-            return { borderColor: filledColor };
-        } else if (percent >= 75) {
-            return {
-                borderColor: filledColor,
-                borderRightColor: unfilledColor,
-            };
+            if (res.ok) {
+                if (Platform.OS === 'web') window.alert("CSV uploaded to global pool successfully!");
+                else Alert.alert("Success", "CSV uploaded to global pool successfully!");
+            } else {
+                const errData = await res.json();
+                const msg = errData.error || "Failed to upload CSV.";
+                if (Platform.OS === 'web') window.alert(msg);
+                else Alert.alert("Error", msg);
+            }
+        } catch (e) {
+            if (Platform.OS === 'web') window.alert("Network error uploading CSV.");
+            else Alert.alert("Error", "Network error uploading CSV.");
+        } finally {
+            setIsUploading(false);
         }
-        return {
-            borderColor: filledColor,
-            borderTopColor: unfilledColor,
-            borderRightColor: unfilledColor,
-        };
+    };
+
+    // Download CSV (connected to sync endpoint)
+    const handleDownloadCSV = async () => {
+        try {
+            const storedToken = await AsyncStorage.getItem('userToken');
+            if (!storedToken) return;
+            const downloadUrl = `${API_BASE_URL}/api/sync/download-local/?token=${storedToken}`;
+            Linking.openURL(downloadUrl);
+        } catch (e) {
+            if (Platform.OS === 'web') window.alert("Failed to initiate download.");
+            else Alert.alert("Error", "Failed to initiate download.");
+        }
+    };
+
+    // Build usage table data from allUsage
+    const buildUsageTableData = () => {
+        if (!allUsage || allUsage.length === 0) return [];
+
+        // Group by date
+        const dailyData: Record<string, { totalMb: number; count: number }> = {};
+        allUsage.forEach(item => {
+            if (!dailyData[item.date]) {
+                dailyData[item.date] = { totalMb: 0, count: 0 };
+            }
+            dailyData[item.date].totalMb += item.data_used_mb;
+            dailyData[item.date].count += 1;
+        });
+
+        const sortedDates = Object.keys(dailyData).sort().reverse();
+        const totalDays = sortedDates.length;
+        const overallAvg = totalDays > 0
+            ? Object.values(dailyData).reduce((sum, d) => sum + d.totalMb, 0) / totalDays
+            : 0;
+
+        return sortedDates.map(date => {
+            const d = dailyData[date];
+            const dateObj = new Date(date);
+            const formatted = `${dateObj.toLocaleDateString('en-US', { month: 'short' })} ${dateObj.getDate()}, ${dateObj.getFullYear()}`;
+
+            let status: 'HEAVY' | 'MODERATE' | 'NORMAL' = 'NORMAL';
+            if (d.totalMb > overallAvg * 1.3) status = 'HEAVY';
+            else if (d.totalMb > overallAvg * 0.8) status = 'MODERATE';
+
+            return {
+                date: formatted,
+                totalUsed: d.totalMb >= 1024 ? `${(d.totalMb / 1024).toFixed(1)}gb` : `${Math.round(d.totalMb)}mb`,
+                dailyAvg: overallAvg >= 1024 ? `${(overallAvg / 1024).toFixed(1)}gb` : `${Math.round(overallAvg)}mb`,
+                duration: '12 hr',
+                status,
+            };
+        });
+    };
+
+    const handleSettings = () => router.push('/Tabs/settings');
+    const handleHome = () => router.push('/Tabs/dashboard');
+    const handleHistory = () => router.replace('/Tabs/history');
+
+    // Calculate total this month
+    const getTotalThisMonth = () => {
+        if (!allUsage || allUsage.length === 0) return '0.00';
+        const now = new Date();
+        const thisMonth = now.getMonth();
+        const thisYear = now.getFullYear();
+        let total = 0;
+        allUsage.forEach(item => {
+            const d = new Date(item.date);
+            if (d.getMonth() === thisMonth && d.getFullYear() === thisYear) {
+                total += item.data_used_mb;
+            }
+        });
+        return (total / 1024).toFixed(2);
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor="#101622" />
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+            <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.background} />
             <Stack.Screen options={{ headerShown: false }} />
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                {/* Header Area Background */}
-                <View style={styles.headerBackground}>
-                    {/* Top Navigation */}
-                    <View style={styles.topNav}>
-                        <View style={styles.esimBadge}>
-                            <Text style={styles.esimText}>E-SIM</Text>
-                            <Text style={styles.phoneNumber}>{phone ? `${phone}` : '63 08312035'}</Text>
-                        </View>
-                        <View style={styles.profileSection}>
-                            <TouchableOpacity onPress={() => setNotifVisible(true)} style={{ position: 'relative' }}>
-                                <MaterialIcons name="notifications-none" size={28} color="white" style={{ marginRight: 12 }} />
-                                {unreadCount > 0 && (
-                                    <View style={styles.badgeContainer}>
-                                        <Text style={styles.badgeText}>{unreadCount}</Text>
-                                    </View>
-                                )}
-                            </TouchableOpacity>
-                            <View style={styles.avatarContainer}>
-                                <View style={styles.avatarPlaceholder}>
-                                    <Text style={styles.avatarText}>{summaryData?.full_name ? summaryData.full_name.charAt(0).toUpperCase() : 'U'}</Text>
+                {/* Top Nav */}
+                <View style={styles.topNav}>
+                    <View style={[styles.esimBadge, { backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' }]}>
+                        <Text style={[styles.esimText, { color: isDarkMode ? '#9ca3af' : '#475569', backgroundColor: isDarkMode ? '#4b5563' : '#cbd5e1' }]}>TM</Text>
+                        <Text style={[styles.phoneNumber, { color: colors.text }]}>{phone ? `+${phone}` : '+6308312035'}</Text>
+                    </View>
+                    <View style={styles.profileSection}>
+                        <TouchableOpacity onPress={() => setNotifVisible(true)} style={{ position: 'relative' }}>
+                            <MaterialIcons name="notifications-none" size={28} color={colors.text} style={{ marginRight: 12 }} />
+                            {unreadCount > 0 && (
+                                <View style={[styles.badgeContainer, { borderColor: colors.background }]}>
+                                    <Text style={styles.badgeText}>{unreadCount}</Text>
                                 </View>
+                            )}
+                        </TouchableOpacity>
+                        <View style={[styles.avatarContainer, { borderColor: colors.border }]}>
+                            <View style={styles.avatarPlaceholder}>
+                                <Text style={styles.avatarText}>{summaryData?.full_name ? summaryData.full_name.charAt(0).toUpperCase() : 'U'}</Text>
                             </View>
                         </View>
                     </View>
+                </View>
 
-                    {/* Greeting */}
-                    <View style={styles.greetingContainer}>
-                        <Text style={styles.greetingText}>
-                            Hi <Text style={styles.greetingName}>{summaryData?.full_name || 'User'}!</Text>
-                        </Text>
-                        <Text style={styles.subtitleText}>This is your usage history</Text>
+                {/* HISTORY Header */}
+                <View style={styles.historyHeader}>
+                    <Text style={[styles.historyTitle, { color: colors.text }]}>HISTORY</Text>
+                    <View style={styles.historyIcons}>
+                        <TouchableOpacity style={styles.historyIconBtn}>
+                            <MaterialIcons name="search" size={26} color={colors.text} />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.historyIconBtn} onPress={handleDownloadCSV}>
+                            <MaterialIcons name="file-download" size={26} color={colors.text} />
+                        </TouchableOpacity>
                     </View>
                 </View>
 
-                {/* Main Usage Card - same size as dashboard */}
-                <View style={styles.mainCard}>
-
-                    {/* Circular Chart Placeholder */}
-                    <View style={styles.chartContainer}>
-                        <View style={[styles.circleOuter, getRingStyles()]}>
-                            <View style={styles.circleInner}>
-                                <Text style={styles.circleTextMain}>
-                                    {percent}%
-                                </Text>
-                            </View>
+                {/* TOTAL THIS MONTH Card with Chart */}
+                <View style={[styles.totalCard, { backgroundColor: colors.card }]}>
+                    <View style={styles.totalCardHeader}>
+                        <View>
+                            <Text style={[styles.totalLabel, { color: colors.textMuted }]}>TOTAL THIS MONTH</Text>
+                            <Text style={[styles.totalValue, { color: colors.text }]}>{getTotalThisMonth()} <Text style={[styles.totalUnit, { color: colors.textMuted }]}>GB</Text></Text>
+                        </View>
+                        {/* Time Filter Tabs */}
+                        <View style={[styles.filterTabs, { backgroundColor: colors.background }]}>
+                            {(['HOURS', 'DAYS', 'WEEKS'] as TimeFilter[]).map(f => (
+                                <TouchableOpacity
+                                    key={f}
+                                    style={[styles.filterTab, timeFilter === f && { backgroundColor: isDarkMode ? '#334155' : '#cbd5e1' }]}
+                                    onPress={() => setTimeFilter(f)}
+                                >
+                                    <Text style={[styles.filterTabText, { color: colors.textMuted }, timeFilter === f && { color: colors.text }]}>
+                                        {f === 'HOURS' ? 'Daily' : f === 'DAYS' ? 'Weekly' : 'Monthly'}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
                         </View>
                     </View>
 
-                    {/* Stats Row */}
-                    <View style={styles.statsRow}>
-                        <StatItem
-                            icon="keyboard-double-arrow-up"
-                            iconColor="white"
-                            iconBgColor="#16a34a"
-                            label="Total Used"
-                            value={summaryData ? `${(summaryData.total_used_mb / 1024).toFixed(2)} GB` : "0 GB"}
-                            subValue={`OUT OF ${summaryData ? Math.round(summaryData.total_limit_mb / 1024) : 0} GB`}
-                        />
-                        <StatItem
-                            icon="schedule"
-                            iconColor="white"
-                            iconBgColor="#2563eb"
-                            label="Predicted"
-                            value="8hrs"
-                            subValue="LEFT"
-                        />
-                        <StatItem
-                            icon="trending-up"
-                            iconColor="white"
-                            iconBgColor="#2563eb"
-                            label="Daily Avg"
-                            value={summaryData ? `${(summaryData.daily_average_mb / 1024).toFixed(2)} GB` : "0 GB"}
-                            subValue="PER DAY"
-                        />
-                    </View>
-
-                    <View
-                        style={[styles.paceButton, { backgroundColor: paceConfig.buttonColor, shadowColor: paceConfig.buttonColor }]}
-                    >
-                        <MaterialIcons name="calendar-today" size={20} color="white" />
-                        <Text style={styles.paceButtonText}>
-                            {paceConfig.text}
-                        </Text>
+                    {/* Bar Chart */}
+                    <View style={styles.chartArea}>
+                        {barData.map((entry, index) => (
+                            <View key={index} style={styles.chartColumn}>
+                                <Text style={[styles.chartValue, { color: colors.textMuted }]}>{entry.value}</Text>
+                                <View style={[styles.chartBar, { height: entry.height }]} />
+                                <Text style={[styles.chartLabel, { color: colors.textMuted }]}>{entry.label}</Text>
+                            </View>
+                        ))}
                     </View>
                 </View>
 
-                {/* Details Card — reusable component, swap barData from DB when ready */}
-                <DetailsCard
-                    barData={barData}
-                    timeFilter={timeFilter}
-                    onTimeFilterChange={setTimeFilter}
+                {/* DETAIL LOGS */}
+                <View style={styles.detailLogsHeader}>
+                    <Text style={[styles.detailLogsTitle, { color: colors.text }]}>DETAIL LOGS</Text>
+                    <TouchableOpacity style={[styles.filterBtn, { backgroundColor: colors.card }]}>
+                        <MaterialIcons name="filter-list" size={18} color={colors.text} />
+                        <Text style={[styles.filterBtnText, { color: colors.text }]}>Filter</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Detail Log Cards */}
+                {allUsage.slice(0, 5).map((item, index) => (
+                    <View key={index} style={[styles.logCard, { backgroundColor: colors.card }]}>
+                        <View style={styles.logCardRow}>
+                            <View style={styles.logCardCol}>
+                                <Text style={[styles.logCardDate, { color: colors.text }]}>{new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</Text>
+                                <Text style={[styles.logCardTime, { color: colors.textMuted }]}>{item.time_slot?.split('-')[0] || '12:00pm'}</Text>
+                            </View>
+                            <View style={styles.logCardCol}>
+                                <Text style={[styles.logCardLabel, { color: colors.textMuted }]}>Data consumed</Text>
+                                <Text style={[styles.logCardValue, { color: colors.text }]}>{item.data_used_mb >= 1024 ? `${(item.data_used_mb / 1024).toFixed(1)}gb` : `${Math.round(item.data_used_mb)}mb`}</Text>
+                            </View>
+                            <View style={styles.logCardCol}>
+                                <Text style={[styles.logCardLabel, { color: colors.textMuted }]}>Session Duration</Text>
+                                <Text style={[styles.logCardValue, { color: colors.text }]}>2h 15m</Text>
+                            </View>
+                            <View style={styles.logCardCol}>
+                                <Text style={[styles.logCardLabel, { color: colors.textMuted }]}>Peak Speed</Text>
+                                <Text style={[styles.logCardValue, { color: colors.text }]}>4.2mb/s</Text>
+                            </View>
+                        </View>
+                    </View>
+                ))}
+
+                {/* Usage Table with Upload/Download CSV */}
+                <UsageTable
+                    data={buildUsageTableData()}
+                    onUploadCSV={handleUploadCSV}
+                    onDownloadCSV={handleDownloadCSV}
                 />
+
+                {isUploading && (
+                    <View style={styles.uploadingOverlay}>
+                        <ActivityIndicator size="large" color="#22c55e" />
+                        <Text style={styles.uploadingText}>Uploading...</Text>
+                    </View>
+                )}
+
             </ScrollView>
 
-            {/* Bottom Navigation Wrapper fixed at bottom */}
+            {/* Bottom Navigation */}
             <View style={styles.bottomNavContainer}>
-                <View style={styles.bottomNavWrapper}>
+                <View style={[styles.bottomNavWrapper, { backgroundColor: colors.card, borderColor: colors.navBorder }]}>
                     <BottomNavItem
                         iconName="home"
                         label="HOME"
@@ -315,11 +396,10 @@ export default function HistoryScreen() {
                         isActive={activeTab === 'Settings'}
                         onPress={handleSettings}
                     />
-
                 </View>
             </View>
 
-            {/* Notifications Panel – slides in from right */}
+            {/* Notifications Panel */}
             <NotificationPanel
                 visible={isNotifVisible}
                 onClose={() => setNotifVisible(false)}
@@ -327,7 +407,6 @@ export default function HistoryScreen() {
                 readNotifIds={readNotifIds}
                 onMarkAllRead={setReadNotifIds}
             />
-
         </SafeAreaView>
     );
 }
@@ -335,31 +414,18 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#e2e8f0',
+        backgroundColor: '#0d1117',
     },
     scrollContent: {
-        paddingTop: 190,
         paddingHorizontal: 20,
+        paddingTop: 50,
         paddingBottom: 110,
-    },
-    headerBackground: {
-        backgroundColor: '#101622',
-        paddingTop: 50, // accommodate status bar roughly
-        paddingHorizontal: 20,
-        paddingBottom: 80,
-        borderBottomLeftRadius: 30,
-        borderBottomRightRadius: 30,
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: 300,
     },
     topNav: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 30,
+        marginBottom: 24,
     },
     esimBadge: {
         flexDirection: 'row',
@@ -378,11 +444,11 @@ const styles = StyleSheet.create({
         paddingVertical: 2,
         borderRadius: 10,
         marginRight: 8,
+        overflow: 'hidden',
     },
     phoneNumber: {
         color: 'white',
         fontSize: 14,
-        marginRight: 4,
     },
     profileSection: {
         flexDirection: 'row',
@@ -400,7 +466,7 @@ const styles = StyleSheet.create({
         borderColor: 'white',
     },
     avatarPlaceholder: {
-        backgroundColor: '#f8cda5', // dummy generic skin color tone block
+        backgroundColor: '#f8cda5',
         width: '100%',
         height: '100%',
         justifyContent: 'center',
@@ -410,179 +476,6 @@ const styles = StyleSheet.create({
         color: '#d97706',
         fontWeight: 'bold',
         fontSize: 18,
-    },
-    greetingContainer: {
-        marginTop: 10,
-    },
-    greetingText: {
-        color: 'white',
-        fontSize: 18,
-    },
-    greetingName: {
-        fontWeight: 'bold',
-    },
-    subtitleText: {
-        color: '#cbd5e1',
-        fontSize: 14,
-        marginTop: 4,
-    },
-    mainCard: {
-        backgroundColor: 'white',
-        borderRadius: 24,
-        padding: 24,
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
-        elevation: 8,
-        marginBottom: 20,
-    },
-
-    chartContainer: {
-        marginTop: 20,
-        marginBottom: 30,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    circleOuter: {
-        width: 180,
-        height: 180,
-        borderRadius: 90,
-        borderWidth: 16,
-        justifyContent: 'center',
-        alignItems: 'center',
-        transform: [{ rotate: '-45deg' }],
-    },
-    circleInner: {
-        transform: [{ rotate: '45deg' }],
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    circleTextMain: {
-        fontSize: 32,
-        fontWeight: '900',
-        color: '#1e1b4b',
-    },
-    statsRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        width: '100%',
-        marginBottom: 24,
-        paddingHorizontal: 10,
-    },
-    paceButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#16a34a', // Green
-        paddingVertical: 14,
-        paddingHorizontal: 20,
-        borderRadius: 12,
-        width: '100%',
-        shadowColor: '#16a34a',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    paceButtonText: {
-        color: 'white',
-        fontWeight: 'bold',
-        marginLeft: 8,
-        fontSize: 14,
-    },
-    detailsCard: {
-        backgroundColor: 'white',
-        borderRadius: 24,
-        padding: 20,
-        marginBottom: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-        elevation: 6,
-    },
-    bottomNavContainer: {
-        position: 'absolute',
-        bottom: 30,
-        left: 20,
-        right: 20,
-        alignItems: 'center',
-    },
-    bottomNavWrapper: {
-        flexDirection: 'row',
-        backgroundColor: 'white',
-        borderRadius: 30,
-        paddingVertical: 12,
-        paddingHorizontal: 20,
-        justifyContent: 'space-between',
-        width: '100%',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
-        elevation: 10,
-    },
-    notifOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'center',
-        paddingHorizontal: 20,
-    },
-    notifContent: {
-        backgroundColor: '#1e293b',
-        borderRadius: 20,
-        padding: 20,
-        maxHeight: '80%',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.3,
-        shadowRadius: 20,
-        elevation: 10,
-    },
-    notifHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: '#334155',
-        paddingBottom: 15,
-    },
-    notifTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: 'white',
-    },
-    notifItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 14,
-        borderBottomWidth: 1,
-        borderBottomColor: '#334155',
-    },
-    notifItemTitle: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: '600',
-        marginBottom: 4,
-    },
-    notifItemMsg: {
-        color: '#94a3b8',
-        fontSize: 13,
-    },
-    notifItemTime: {
-        color: '#64748b',
-        fontSize: 11,
-        marginTop: 4,
-    },
-    unreadDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: '#3b82f6',
-        marginTop: 6,
     },
     badgeContainer: {
         position: 'absolute',
@@ -595,11 +488,210 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 1.5,
-        borderColor: '#101622',
+        borderColor: '#0d1117',
     },
     badgeText: {
         color: 'white',
         fontSize: 10,
         fontWeight: 'bold',
+    },
+    // HISTORY Header
+    historyHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    historyTitle: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: 'white',
+        letterSpacing: 1,
+    },
+    historyIcons: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    historyIconBtn: {
+        padding: 4,
+    },
+    // Total This Month Card
+    totalCard: {
+        backgroundColor: '#1a1f2e',
+        borderRadius: 20,
+        padding: 20,
+        marginBottom: 20,
+    },
+    totalCardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 20,
+    },
+    totalLabel: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#94a3b8',
+        letterSpacing: 0.5,
+    },
+    totalValue: {
+        fontSize: 28,
+        fontWeight: '900',
+        color: 'white',
+        marginTop: 4,
+    },
+    totalUnit: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#94a3b8',
+    },
+    filterTabs: {
+        flexDirection: 'row',
+        backgroundColor: '#0d1117',
+        borderRadius: 10,
+        padding: 3,
+    },
+    filterTab: {
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 8,
+    },
+    filterTabActive: {
+        backgroundColor: '#334155',
+    },
+    filterTabText: {
+        fontSize: 11,
+        color: '#64748b',
+        fontWeight: '600',
+    },
+    filterTabTextActive: {
+        color: 'white',
+    },
+    // Chart Area
+    chartArea: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-end',
+        height: 120,
+        paddingTop: 10,
+    },
+    chartColumn: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+    },
+    chartValue: {
+        fontSize: 9,
+        color: '#64748b',
+        marginBottom: 4,
+    },
+    chartBar: {
+        width: 12,
+        backgroundColor: '#3b82f6',
+        borderRadius: 4,
+        minHeight: 6,
+    },
+    chartLabel: {
+        fontSize: 10,
+        color: '#94a3b8',
+        marginTop: 6,
+        fontWeight: '500',
+    },
+    // Detail Logs
+    detailLogsHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    detailLogsTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: 'white',
+        letterSpacing: 0.5,
+    },
+    filterBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#1a1f2e',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 8,
+        gap: 4,
+    },
+    filterBtnText: {
+        color: 'white',
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    // Log Cards
+    logCard: {
+        backgroundColor: '#1a1f2e',
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 10,
+    },
+    logCardRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    logCardCol: {
+        alignItems: 'center',
+    },
+    logCardDate: {
+        fontSize: 11,
+        color: '#94a3b8',
+        fontWeight: '600',
+    },
+    logCardTime: {
+        fontSize: 11,
+        color: '#64748b',
+        marginTop: 2,
+    },
+    logCardLabel: {
+        fontSize: 10,
+        color: '#64748b',
+        fontWeight: '500',
+    },
+    logCardValue: {
+        fontSize: 12,
+        color: 'white',
+        fontWeight: 'bold',
+        marginTop: 2,
+    },
+    // Upload indicator
+    uploadingOverlay: {
+        alignItems: 'center',
+        paddingVertical: 20,
+    },
+    uploadingText: {
+        color: '#22c55e',
+        marginTop: 8,
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    // Bottom Navigation
+    bottomNavContainer: {
+        position: 'absolute',
+        bottom: 20,
+        left: 20,
+        right: 20,
+        alignItems: 'center',
+    },
+    bottomNavWrapper: {
+        flexDirection: 'row',
+        backgroundColor: '#1a1f2e',
+        borderRadius: 30,
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        justifyContent: 'space-between',
+        width: '100%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        elevation: 10,
+        borderWidth: 1,
+        borderColor: '#2a2f3e',
     },
 });

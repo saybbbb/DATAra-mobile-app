@@ -12,7 +12,9 @@ import {
     View,
     ActivityIndicator,
     Modal,
+    Platform,
     Image,
+    Alert,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -20,12 +22,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUser } from '../../context/UserContext';
 import { API_BASE_URL } from '../../constants/Config';
 import { ProfileCard } from '../../components/ProfileCard';
+import { BottomNavItem } from '../../components/BottomNavItem';
+import { useTheme } from '../../context/ThemeContext';
 
 // Default cartoon character matching the user's style
 const DEFAULT_AVATAR_URI = 'https://api.dicebear.com/7.x/adventurer/png?seed=Charlie';
 
 export default function ProfileScreen() {
     const { phone } = useUser();
+    const { isDarkMode, colors } = useTheme();
+    const [activeTab, setActiveTab] = useState('Settings');
+    const [isDeleteAccountModalVisible, setDeleteAccountModalVisible] = useState(false);
+    const [isDeletingAccount, setIsDeletingAccount] = useState(false);
     
     // Auth Token
     const [token, setToken] = useState<string | null>(null);
@@ -67,6 +75,14 @@ export default function ProfileScreen() {
                     if (res.ok) {
                         const data = await res.json();
                         setProfile(data);
+                        setEditName(data.full_name || '');
+                        setSelectedRegion(data.region_code || '');
+                        setSelectedCity(data.city_code || '');
+                        setSelectedBarangay(data.barangay_code || '');
+                        setStreetAddress(data.street_address || '');
+                        
+                        if (data.region_code) fetchCities(data.region_code);
+                        if (data.city_code) fetchBarangays(data.city_code);
                         setEditName(data.full_name || '');
                         setEditEmail(data.email || '');
                     }
@@ -196,27 +212,33 @@ export default function ProfileScreen() {
         const fullAddress = `${streetAddress}, ${brgyName}, ${cityName}, ${regionName}`.replace(/^, | ,/g, '').trim();
         
         updateBackendProfile(
-            { address: fullAddress },
+            { 
+                address: fullAddress,
+                region_code: selectedRegion,
+                city_code: selectedCity,
+                barangay_code: selectedBarangay,
+                street_address: streetAddress
+            },
             setLoadingAddress,
             () => setAddressModalVisible(false)
         );
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor="#101622" />
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+            <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.background} />
             <Stack.Screen options={{ headerShown: false }} />
 
             {/* Header Section (Dark Blue Background) */}
-            <View style={styles.header}>
+            <View style={[styles.header, { backgroundColor: isDarkMode ? '#0d1320' : colors.card }]}>
                 {/* Back button (Top Left) */}
                 <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                    <MaterialIcons name="keyboard-arrow-left" size={28} color="white" />
+                    <MaterialIcons name="keyboard-arrow-left" size={28} color={isDarkMode ? 'white' : colors.text} />
                 </TouchableOpacity>
 
                 {/* Edit icon (Top Right) */}
                 <TouchableOpacity style={styles.editIcon}>
-                    <Feather name="edit" size={20} color="white" />
+                    <Feather name="edit" size={20} color={isDarkMode ? 'white' : colors.text} />
                 </TouchableOpacity>
 
                 {/* Circular Profile Avatar */}
@@ -229,12 +251,12 @@ export default function ProfileScreen() {
                 </View>
 
                 {/* Subtitle */}
-                <Text style={styles.profilePhotoText}>PROFILE PHOTO</Text>
+                <Text style={[styles.profilePhotoText, { color: isDarkMode ? 'white' : colors.text }]}>PROFILE PHOTO</Text>
             </View>
 
             {/* Content Area (Light Gray Background) */}
             <ScrollView 
-                style={styles.contentScroll} 
+                style={[styles.contentScroll, { backgroundColor: colors.background }]} 
                 contentContainerStyle={styles.contentContainer} 
                 showsVerticalScrollIndicator={false}
             >
@@ -264,13 +286,22 @@ export default function ProfileScreen() {
                     value={profile?.address || 'California Cogon City'} 
                     onPress={() => setAddressModalVisible(true)} 
                 />
+
+                {/* DELETE ACCOUNT Button — Figma */}
+                <TouchableOpacity 
+                    style={styles.deleteAccountButton}
+                    onPress={() => setDeleteAccountModalVisible(true)}
+                >
+                    <MaterialIcons name="delete-outline" size={20} color="white" />
+                    <Text style={styles.deleteAccountText}>DELETE ACCOUNT</Text>
+                </TouchableOpacity>
             </ScrollView>
 
             {/* Name Edit Modal */}
             <Modal visible={isNameModalVisible} transparent={true} animationType="fade">
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Edit Name</Text>
+                    <View style={[styles.modalContent, { backgroundColor: colors.cardAlt }]}>
+                        <Text style={[styles.modalTitle, { color: colors.text }]}>Edit Name</Text>
                         <TextInput
                             style={styles.modalInput}
                             value={editName}
@@ -293,8 +324,8 @@ export default function ProfileScreen() {
             {/* Email Edit Modal */}
             <Modal visible={isEmailModalVisible} transparent={true} animationType="fade">
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Edit Email</Text>
+                    <View style={[styles.modalContent, { backgroundColor: colors.cardAlt }]}>
+                        <Text style={[styles.modalTitle, { color: colors.text }]}>Edit Email</Text>
                         <TextInput
                             style={styles.modalInput}
                             value={editEmail}
@@ -319,11 +350,11 @@ export default function ProfileScreen() {
             {/* Address Edit Modal */}
             <Modal visible={isAddressModalVisible} transparent={true} animationType="slide">
                 <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, styles.addressModal]}>
-                        <Text style={styles.modalTitle}>Update Address</Text>
+                    <View style={[styles.modalContent, styles.addressModal, { backgroundColor: colors.cardAlt }]}>
+                        <Text style={[styles.modalTitle, { color: colors.text }]}>Update Address</Text>
                         
                         <ScrollView showsVerticalScrollIndicator={false}>
-                            <Text style={styles.label}>Region</Text>
+                            <Text style={[styles.label, { color: colors.textMuted }]}>Region</Text>
                             <View style={styles.pickerContainer}>
                                 <Picker selectedValue={selectedRegion} onValueChange={onRegionChange} style={styles.picker} dropdownIconColor="#0f172a">
                                     <Picker.Item label="Select Region" value="" color="#94a3b8" />
@@ -333,7 +364,7 @@ export default function ProfileScreen() {
                                 </Picker>
                             </View>
 
-                            <Text style={styles.label}>City/Municipality</Text>
+                            <Text style={[styles.label, { color: colors.textMuted }]}>City/Municipality</Text>
                             <View style={styles.pickerContainer}>
                                 <Picker selectedValue={selectedCity} onValueChange={onCityChange} style={styles.picker} enabled={cities.length > 0} dropdownIconColor="#0f172a">
                                     <Picker.Item label="Select City/Municipality" value="" color="#94a3b8" />
@@ -343,7 +374,7 @@ export default function ProfileScreen() {
                                 </Picker>
                             </View>
 
-                            <Text style={styles.label}>Barangay</Text>
+                            <Text style={[styles.label, { color: colors.textMuted }]}>Barangay</Text>
                             <View style={styles.pickerContainer}>
                                 <Picker selectedValue={selectedBarangay} onValueChange={(val) => setSelectedBarangay(val)} style={styles.picker} enabled={barangays.length > 0} dropdownIconColor="#0f172a">
                                     <Picker.Item label="Select Barangay" value="" color="#94a3b8" />
@@ -353,7 +384,7 @@ export default function ProfileScreen() {
                                 </Picker>
                             </View>
 
-                            <Text style={styles.label}>Street Address</Text>
+                            <Text style={[styles.label, { color: colors.textMuted }]}>Street Address</Text>
                             <TextInput
                                 style={styles.modalInput}
                                 placeholder="House/Unit No., Street Name"
@@ -374,6 +405,78 @@ export default function ProfileScreen() {
                     </View>
                 </View>
             </Modal>
+
+            {/* Delete Account Confirmation Modal */}
+            <Modal visible={isDeleteAccountModalVisible} transparent={true} animationType="fade">
+                <View style={styles.modalOverlay}>
+                    <View style={[styles.modalContent, { backgroundColor: colors.cardAlt }]}>
+                        <MaterialIcons name="warning" size={48} color="#f87171" style={{ alignSelf: 'center', marginBottom: 16 }} />
+                        <Text style={[styles.modalTitle, { color: colors.text }]}>Delete Account?</Text>
+                        <Text style={[styles.deleteModalMessage, { color: colors.textMuted }]}>
+                            This action will permanently delete your account and all associated data. This cannot be undone.
+                        </Text>
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => setDeleteAccountModalVisible(false)} disabled={isDeletingAccount}>
+                                <Text style={styles.modalButtonText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity 
+                                style={[styles.modalButton, { backgroundColor: '#dc2626' }]} 
+                                onPress={async () => {
+                                    setIsDeletingAccount(true);
+                                    try {
+                                        const storedToken = await AsyncStorage.getItem('userToken');
+                                        const res = await fetch(`${API_BASE_URL}/api/profile/`, {
+                                            method: 'DELETE',
+                                            headers: { 'Authorization': `Token ${storedToken}` }
+                                        });
+                                        if (res.ok) {
+                                            await AsyncStorage.removeItem('userToken');
+                                            setDeleteAccountModalVisible(false);
+                                            if (Platform.OS === 'web') { window.alert('Account deleted'); router.replace('/'); }
+                                            else Alert.alert('Success', 'Account deleted', [{ text: 'OK', onPress: () => router.replace('/') }]);
+                                        } else {
+                                            if (Platform.OS === 'web') window.alert('Failed to delete account');
+                                            else Alert.alert('Error', 'Failed to delete account');
+                                        }
+                                    } catch (e) {
+                                        if (Platform.OS === 'web') window.alert('Network error');
+                                        else Alert.alert('Error', 'Network error');
+                                    } finally {
+                                        setIsDeletingAccount(false);
+                                    }
+                                }} 
+                                disabled={isDeletingAccount}
+                            >
+                                {isDeletingAccount ? <ActivityIndicator color="white" /> : <Text style={styles.modalButtonText}>Delete</Text>}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Bottom Navigation */}
+            <View style={styles.bottomNavContainer}>
+                <View style={[styles.bottomNavWrapper, { backgroundColor: colors.card, borderColor: colors.navBorder }]}>
+                    <BottomNavItem
+                        iconName="home"
+                        label="HOME"
+                        isActive={false}
+                        onPress={() => router.push('/Tabs/dashboard')}
+                    />
+                    <BottomNavItem
+                        iconName="history"
+                        label="HISTORY"
+                        isActive={false}
+                        onPress={() => router.push('/Tabs/history')}
+                    />
+                    <BottomNavItem
+                        iconName="settings"
+                        label="SETTINGS"
+                        isActive={true}
+                        onPress={() => router.push('/Tabs/settings')}
+                    />
+                </View>
+            </View>
         </SafeAreaView>
     );
 }
@@ -440,7 +543,7 @@ const styles = StyleSheet.create({
     },
     contentContainer: {
         paddingTop: 20,
-        paddingBottom: 40,
+        paddingBottom: 120,
         paddingHorizontal: 20,
     },
     // Modal Styles
@@ -450,6 +553,9 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 20,
+        width: '100%',
+        maxWidth: Platform.OS === 'web' ? 480 : '100%',
+        alignSelf: 'center',
     },
     modalContent: {
         width: '100%',
@@ -515,6 +621,59 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         marginBottom: 16,
         overflow: 'hidden',
+    },
+    deleteAccountButton: {
+        flexDirection: 'row',
+        alignSelf: 'center',
+        backgroundColor: '#dc2626',
+        paddingVertical: 16,
+        paddingHorizontal: 32,
+        borderRadius: 30,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        marginTop: 24,
+        shadowColor: '#dc2626',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 6,
+    },
+    deleteAccountText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 14,
+        letterSpacing: 1,
+    },
+    deleteModalMessage: {
+        color: '#cbd5e1',
+        fontSize: 14,
+        textAlign: 'center',
+        marginBottom: 20,
+        lineHeight: 20,
+    },
+    bottomNavContainer: {
+        position: 'absolute',
+        bottom: 20,
+        left: 20,
+        right: 20,
+        alignItems: 'center',
+    },
+    bottomNavWrapper: {
+        flexDirection: 'row',
+        backgroundColor: '#1a1f2e',
+        borderRadius: 30,
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        justifyContent: 'space-between',
+        width: '100%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        elevation: 10,
+        borderWidth: 1,
+        borderColor: '#2a2f3e',
     },
     picker: {
         height: 50,

@@ -1,1 +1,2 @@
-export const API_URL = 'http://YOUR_IP_ADDRESS:8000';
+export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+export const WS_URL = process.env.EXPO_PUBLIC_WS_URL || 'ws://127.0.0.1:8000';
